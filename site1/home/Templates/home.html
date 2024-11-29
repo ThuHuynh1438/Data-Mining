@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home</title>
+    <!-- Font Awesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+      }
+
+      .sidebar {
+        width: 300px;
+        background-color: #1e293b;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .sidebar h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: #f4f4f9;
+      }
+
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .sidebar ul li {
+        margin: 15px 0;
+      }
+
+      .sidebar ul li a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .sidebar ul li a:hover {
+        background-color: #3b82f6;
+      }
+
+      .sidebar ul li a#home-link {
+        color: #ffd700; /* Màu vàng cho chữ "Trang chủ" */
+        font-weight: bold; /* Làm đậm chữ */
+      }
+
+      .sidebar ul li a i,
+      .sidebar ul li a svg {
+        margin-right: 10px;
+        flex-shrink: 0; /* Ngăn icon bị co khi chữ dài */
+      }
+
+      .sub-menu {
+        display: none;
+        padding-left: 20px;
+      }
+
+      .sub-menu li {
+        margin: 10px 0;
+      }
+
+      .sub-menu li a {
+        background-color: #3b82f6;
+      }
+
+      .main-content {
+        margin-left: 320px;
+        padding: 20px;
+      }
+
+      .content-header {
+        background-color: #f8fafc;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .content-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #1e293b;
+      }
+
+      .content {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .content img {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .content p {
+        font-size: 16px;
+        color: #374151;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="sidebar">
+      <h2><i class="fas fa-database"></i> Home</h2>
+      <ul>
+        <!-- Trang chủ -->
+        <li>
+          <a href="#" id="home-link" onclick="showHome()">
+            <i class="fas fa-home"></i>
+            <span>Trang chủ</span>
+          </a>
+        </li>
+
+        <!-- Các thuật toán không nhóm -->
+        <li>
+          <a href="frequent_itemsets.html">
+            <i class="fas fa-layer-group"></i>
+            Tập phổ biến
+          </a>
+        </li>
+        <li>
+          <a href="association_rules.html">
+            <i class="fas fa-random"></i>
+            Luật kết hợp
+          </a>
+        </li>
+        <li>
+          <a href="attribute_correlation.html">
+            <i class="fas fa-chart-line"></i>
+            Mức độ tương quan
+          </a>
+        </li>
+
+        <!-- Nhóm Cây quyết định -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('decisionTree')">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="20px"
+              width="20px"
+              viewBox="0 -960 960 960"
+              fill="#ffffff"
+            >
+              <path
+                d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z"
+              />
+            </svg>
+            <span>Cây quyết định</span>
+          </a>
+          <ul class="sub-menu" id="decisionTree">
+            <li>
+              <a href="gain.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Gain
+              </a>
+            </li>
+            <li>
+              <a href="gini.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Gini
+              </a>
+            </li>
+            <li>
+              <a href="if_then.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                IF - THEN
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Nhóm Xấp xỉ -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('approximation')">
+            <i class="fas fa-stream"></i>
+            Xấp xỉ
+          </a>
+          <ul class="sub-menu" id="approximation">
+            <li>
+              <a href="approximation.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính xấp xỉ
+              </a>
+            </li>
+            <li>
+              <a href="dependency.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Khảo sát phụ thuộc
+              </a>
+            </li>
+            <li>
+              <a href="reducts.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính reducts
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Nhóm Gom cụm -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('clustering')">
+            <i class="fas fa-object-group"></i>
+            Gom cụm
+          </a>
+          <ul class="sub-menu" id="clustering">
+            <li>
+              <a href="bayes.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Bayes
+              </a>
+            </li>
+            <li>
+              <a href="laplace.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Laplace
+              </a>
+            </li>
+            <li>
+              <a href="kmeans.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                K-Means
+              </a>
+            </li>
+            <li>
+              <a href="kohonen.html">
+                <i class="fas fa-arrow-circle-right"></i>
+                Kohonen
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main-content">
+      <div class="content-header">
+        <h1>Chào mừng bạn trở lại!</h1>
+      </div>
+      <div class="content">
+        <img
+          src="https://cdn.fpt-is.com/vi/khai-pha-du-lieu-la-gi-11-1715227612.png"
+          alt="Data Mining Visualization"
+        />
+      </div>
+    </div>
+
+    <script>
+      // Hiển thị/ẩn sub-menu khi nhấn vào nhóm
+      function toggleSubMenu(menuId) {
+        const menu = document.getElementById(menuId);
+        if (menu) {
+          if (menu.style.display === "block") {
+            menu.style.display = "none";
+          } else {
+            menu.style.display = "block";
+          }
+        }
+      }
+
+      // Xử lý hiển thị trang "Trang chủ"
+      function showHome() {
+        alert("Bạn đang ở trang chủ!");
+      }
+    </script>
+  </body>
+</html>
