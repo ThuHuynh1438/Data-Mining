@@ -128,6 +128,7 @@
 
       }
 
+
       #file-upload {
           display: none;
       }
@@ -142,8 +143,31 @@
           font-size: 16px;
           margin: 4px 2px;
           cursor: pointer;  
-
+          border-radius: 30%%;
       }
+      #tinhxapxibtn {
+          background-color: #FFFF;
+          color: black;
+          padding: 15px 32px;
+          text-align: center;
+          text-decoration: none;
+          display: inline-block;
+          font-size: 16px;
+          margin: 4px 2px;
+          cursor: pointer;  
+          border-radius: 30%;
+      }
+
+      input[type="text"] {
+        width: 500px; 
+        height: 16px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+
+    }
+
+
     </style>
   </head>
 
@@ -292,10 +316,74 @@
           Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân
           tích giúp bạn
         </p>
-        <input type="file" id="file-upload" accept=".xlsx,.xls" />
-        <button id="upload-button">Tải lên</button>
+        <form method="“post”" enctype="multipart/form-data">
+          <input type="file" id="file-upload" accept=".xlsx,.xls" />
+          <button type="submit" id="upload-button">Tải lên</button>
+          <span id="file-name"></span>
+        </form>
+        
+        </br>
+        <hr style="border-top: 1px solid #FFFF;"> </br>
+
+        <div class="thongtinxapxi">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="condition_columns"
+              ><h2>Nhập tên cột điều kiện (ngăn cách bằng dấu phẩy):</h2></label
+            >
+            <input
+              type="text"
+              id="condition_columns"
+              name="condition_columns"
+              required
+            />
+            </br> </br>
+            <label for="decision_column"><h2>Nhập tên cột quyết định:</h2></label>
+            <input
+              type="text"
+              id="decision_column"
+              name="decision_column"
+              required
+            />
+            </br> </br>
+            <button id="tinhxapxibtn" type="submit">Tính xấp xỉ</button>
+          </form>
+        </div>
       </div>
+
+      <div class="ketquatinhxapxi">
+        {% if result %}
+          <h2>Kết quả tính xấp xỉ</h2>
+          <h3>B-Lower "Biên dưới":</h3>
+          <ul>
+              {% for item in result.b_lower %}
+                  <li>{{ item }}</li>
+              {% endfor %}
+          </ul>
+
+          <h3>B-Upper "Biên trên":</h3>
+          <ul>
+              {% for item in result.b_upper %}
+                  <li>{{ item }}</li>
+              {% endfor %}
+          </ul>
+
+          <h3>Boundary Region "Vùng biên":</h3>
+          <ul>
+              {% for item in result.boundary_region %}
+                  <li>{{ item }}</li>
+              {% endfor %}
+          </ul>
+
+          <h3>Độ chính xác của tập thô:</h3>
+          {{ result.accuracy|floatformat:2 }}
+
+        {% endif %}
+
+      </div>
+      
     </div>
+
 
     <script>
       // Hiển thị/ẩn sub-menu khi nhấn vào nhóm
@@ -317,6 +405,7 @@
 
       const uploadButton = document.getElementById("upload-button");
       const fileUpload = document.getElementById("file-upload");
+      const fileNameDisplay = document.getElementById("file-name");
 
       uploadButton.addEventListener("click", () => {
         fileUpload.click();
@@ -324,8 +413,23 @@
 
       fileUpload.addEventListener("change", (event) => {
         const file = event.target.files[0];
-        // Thêm code xử lý khi người dùng chọn file ở đây
-        console.log("File đã chọn:", file);
+        const fileName = file.name;
+
+        fileNameDisplay.textContent = fileName;
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: "binary" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+          console.log(jsonData);
+          // Dữ liệu Excel đã được chuyển đổi thành JSON
+        };
+
+        reader.readAsBinaryString(file);
       });
     </script>
   </body>
