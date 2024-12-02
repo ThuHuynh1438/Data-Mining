@@ -33,7 +33,6 @@ def process_excel(file_path, target_set, attributes_set):
     # Tính độ chính xác
     accuracy = len(lower_approx) / len(upper_approx) if upper_approx else 0
 
-
     return lower_approx, upper_approx, accuracy
 
 def approximation(request):
