@@ -177,7 +177,7 @@
       <ul>
         <!-- Trang chủ -->
         <li>
-          <a href="#" id="home-link" onclick="showHome()">
+          <a href="{% url 'homepage' %}" id="home-link" onclick="showHome()">
             <i class="fas fa-home"></i>
             <span>Trang chủ</span>
           </a>
@@ -305,84 +305,67 @@
       </ul>
     </div>
 
-    <div class="main-content">
+    <div class="main-content"> 
       <div class="content-header">
         <h1>Tính xấp xỉ</h1>
       </div>
-
+    
       <div class="uploadexcel">
         <h1>Tải file Excel lên tại đây</h1>
-        <p>
-          Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân
-          tích giúp bạn
-        </p>
-        <form method="“post”" enctype="multipart/form-data">
-          <input type="file" id="file-upload" accept=".xlsx,.xls" />
-          <button type="submit" id="upload-button">Tải lên</button>
-          <span id="file-name"></span>
+        <p>Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân tích giúp bạn</p>
+    
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+          <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
+          <button id="upload-button" type="submit">Tải lên</button>
+          <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
         </form>
-        
+    
         </br>
         <hr style="border-top: 1px solid #FFFF;"> </br>
 
         <div class="thongtinxapxi">
-          <form method="post" enctype="multipart/form-data">
+        {% if file_path %}
+          <form method="post">
             {% csrf_token %}
-            <label for="condition_columns"
-              ><h2>Nhập tên cột điều kiện (ngăn cách bằng dấu phẩy):</h2></label
-            >
-            <input
-              type="text"
-              id="condition_columns"
-              name="condition_columns"
-              required
-            />
+            <!-- Truyền đường dẫn file đã tải lên -->
+            <input type="hidden" name="file_path" value="{{ file_path }}" />
+    
+            <label >
+              <h2>Nhập tập đối tượng X "cách nhau bởi dấu ,":</h2>
+            </label>
+            <input type="text" name="target_set" id="target_set" value="{{ target_set|default:'' }}" required />
             </br> </br>
-            <label for="decision_column"><h2>Nhập tên cột quyết định:</h2></label>
-            <input
-              type="text"
-              id="decision_column"
-              name="decision_column"
-              required
-            />
+            <label>
+              <h2>Nhập tập thuộc tính "cách nhau bởi dấu ,"</h2>
+            </label>
+            <input type="text" name="attributes_set" id="attributes_set" value="{{ attributes_set|default:'' }}" required />
             </br> </br>
             <button id="tinhxapxibtn" type="submit">Tính xấp xỉ</button>
           </form>
+        {% endif %}
         </div>
       </div>
-
-      <div class="ketquatinhxapxi">
-        {% if result %}
-          <h2>Kết quả tính xấp xỉ</h2>
-          <h3>B-Lower "Biên dưới":</h3>
-          <ul>
-              {% for item in result.b_lower %}
-                  <li>{{ item }}</li>
-              {% endfor %}
-          </ul>
-
-          <h3>B-Upper "Biên trên":</h3>
-          <ul>
-              {% for item in result.b_upper %}
-                  <li>{{ item }}</li>
-              {% endfor %}
-          </ul>
-
-          <h3>Boundary Region "Vùng biên":</h3>
-          <ul>
-              {% for item in result.boundary_region %}
-                  <li>{{ item }}</li>
-              {% endfor %}
-          </ul>
-
-          <h3>Độ chính xác của tập thô:</h3>
-          {{ result.accuracy|floatformat:2 }}
-
-        {% endif %}
-
+    
+ 
+      <hr>
+      <div class="result">
+        <h2>Kết quả tính toán</h2>
+        <p><strong>Tập X (Target Set):</strong> {{ target_set }}</p>
+        <p><strong>Tập thuộc tính (Attributes Set):</strong> {{ attributes_set }}</p>
+        <p><strong>Xấp xỉ dưới:</strong> {{ lower_approx }}</p>
+        <p><strong>Xấp xỉ trên:</strong> {{ upper_approx }}</p>
+        <p><strong>Độ chính xác:</strong> {{ accuracy }}</p>
       </div>
-      
+
+
+      <!-- Hiển thị lỗi nếu có -->
+      {% if error %}
+      <p style="color: red;">{{ error }}</p>
+      {% endif %}
     </div>
+    
 
 
     <script>
@@ -397,40 +380,11 @@
           }
         }
       }
-
-      // Xử lý hiển thị trang "Trang chủ"
+            // Xử lý hiển thị trang "Trang chủ"
       function showHome() {
         alert("Bạn đang ở trang chủ!");
       }
 
-      const uploadButton = document.getElementById("upload-button");
-      const fileUpload = document.getElementById("file-upload");
-      const fileNameDisplay = document.getElementById("file-name");
-
-      uploadButton.addEventListener("click", () => {
-        fileUpload.click();
-      });
-
-      fileUpload.addEventListener("change", (event) => {
-        const file = event.target.files[0];
-        const fileName = file.name;
-
-        fileNameDisplay.textContent = fileName;
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-          const data = e.target.result;
-          const workbook = XLSX.read(data, { type: "binary" });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
-          console.log(jsonData);
-          // Dữ liệu Excel đã được chuyển đổi thành JSON
-        };
-
-        reader.readAsBinaryString(file);
-      });
     </script>
   </body>
 </html>
