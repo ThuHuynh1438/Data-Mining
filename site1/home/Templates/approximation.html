@@ -185,7 +185,7 @@
 
         <!-- Các thuật toán không nhóm -->
         <li>
-          <a href="frequent_itemsets.html">
+          <a href="{% url 'TapPhoBien' %}">
             <i class="fas fa-layer-group"></i>
             Tập phổ biến
           </a>
@@ -325,8 +325,8 @@
         </br>
         <hr style="border-top: 1px solid #FFFF;"> </br>
 
-        <div class="thongtinxapxi">
         {% if file_path %}
+        <div class="thongtinxapxi">
           <form method="post">
             {% csrf_token %}
             <!-- Truyền đường dẫn file đã tải lên -->
@@ -344,8 +344,9 @@
             </br> </br>
             <button id="tinhxapxibtn" type="submit">Tính xấp xỉ</button>
           </form>
-        {% endif %}
+
         </div>
+        {% endif %}
       </div>
     
  
@@ -354,16 +355,39 @@
         <h2>Kết quả tính toán</h2>
         <p><strong>Tập X (Target Set):</strong> {{ target_set }}</p>
         <p><strong>Tập thuộc tính (Attributes Set):</strong> {{ attributes_set }}</p>
+        <p><strong>Các lớp tương đương:</strong></p>
+        <ul>
+            {% for key, items in equivalence_classes.items %}
+                <li><strong>{{ key }}:</strong> {{ items }}</li>
+            {% endfor %}
+        </ul>
+
+        <!-- Hiển thị lớp tương đương nếu có -->
+        {% if lower_approx %}
         <p><strong>Xấp xỉ dưới:</strong> {{ lower_approx }}</p>
+        {% else %}
+        <p><strong>Xấp xỉ dưới:</strong> Không có đối tượng phù hợp.</p>
+        {% endif %}
+
+        {% if upper_approx %}
         <p><strong>Xấp xỉ trên:</strong> {{ upper_approx }}</p>
+        {% else %}
+        <p><strong>Xấp xỉ trên:</strong> Không có đối tượng phù hợp.</p>
+        {% endif %}
+
+        {% if accuracy %}
         <p><strong>Độ chính xác:</strong> {{ accuracy }}</p>
+        {% else %}
+        <p><strong>Độ chính xác:</strong> Không thể tính toán độ chính xác.</p>
+        {% endif %}
+
       </div>
 
 
       <!-- Hiển thị lỗi nếu có -->
-      {% if error %}
-      <p style="color: red;">{{ error }}</p>
-      {% endif %}
+      {% comment %} {% if error %} {% endcomment %}
+      {% comment %} <p style="color: red;">{{ error }}</p> {% endcomment %}
+      {% comment %} {% endif %} {% endcomment %}
     </div>
     
 

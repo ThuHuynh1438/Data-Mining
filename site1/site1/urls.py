@@ -20,6 +20,7 @@ from home import views as home
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home.get_home, name='homepage'),
-     path('approximation/', home.approximation, name='approximation'),
+    path('approximation/', home.approximation, name='approximation'),
+    path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
 
 ]
