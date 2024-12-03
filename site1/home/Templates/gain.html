@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Tree Gain</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            padding: 20px;
+            background-color: #ffffff;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #2e6e4e;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #007bff;
+            margin-top: 20px;
+            font-size: 1.6rem;
+        }
+
+        p {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #d9534f;
+            margin-top: 20px;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .tree-image {
+            display: block;
+            margin: 0 auto;
+            border-radius: 8px;/* Giảm kích thước ảnh xuống còn 50% */
+            max-width: 1000px; /* Giới hạn kích thước tối đa */
+        }        
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 1rem;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Decision Tree Analysis</h1>
+
+    <div class="container">
+        {% if error %}
+            <p>{{ error }}</p>
+        {% endif %}
+
+        {% if results %}
+            <div class="card">
+                <h2>{{ results }}</h2>
+            </div>
+        {% endif %}
+        {% if image_path %}
+            <div class="card">
+                <h3>Decision Tree Image:</h3>
+                <img src="{{ image_path }}" alt="Decision Tree" class="tree-image">
+            </div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file">Upload file CSV hoặc Excel:</label>
+            <input type="file" name="file" id="file" required>
+            <button type="submit">Phân tích</button>
+        </form>
+    </div>
+
+    
+</body>
+</html>
+
+
