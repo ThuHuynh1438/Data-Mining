@@ -22,6 +22,7 @@ urlpatterns = [
     path('', home.get_home, name='homepage'),
     path('approximation/', home.approximation, name='approximation'),
     path('dependency/', home.dependency, name='dependency'),
+    path('reduct/', home.reduct, name='reduct'),
     path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
 
 ]

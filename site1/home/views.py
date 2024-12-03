@@ -2,10 +2,9 @@ from django.shortcuts import redirect, render
 from django.http import HttpResponse
 import pandas as pd
 import numpy as np
-from django.contrib import messages
 import os
-from django.http import JsonResponse
 from django.conf import settings
+from itertools import combinations
 
 # Create your views here.
 def get_home(request):
@@ -203,3 +202,78 @@ def lower_approximation(class_objects, equivalence_classes_B):
         if set(objects).issubset(class_objects):
             lower.update(objects)
     return list(lower)
+
+
+
+def reduct(request):
+    context = {}
+
+    if request.method == 'POST' and 'excel_file' in request.FILES:
+        # Tải file Excel lên
+        excel_file = request.FILES['excel_file']
+        file_path = os.path.join(settings.MEDIA_ROOT, excel_file.name)
+        with open(file_path, 'wb+') as destination:
+            for chunk in excel_file.chunks():
+                destination.write(chunk)
+
+        # Lưu đường dẫn file vào session
+        request.session['file_path'] = file_path
+        context['file_path'] = file_path
+        context['file_name'] = excel_file.name
+
+        # Đọc dữ liệu từ file Excel
+        df = pd.read_excel(file_path)
+
+        # Loại bỏ cột đầu tiên để không xét nó khi tìm rút gọn
+        columns = df.columns
+        decision_column = columns[-1]  # Cột quyết định
+        attributes = columns[1:-1]  # Các thuộc tính (bỏ cột đầu tiên và cột quyết định)
+
+        # Hàm tìm tập rút gọn (reduct)
+        def find_reducts(df, decision_column, attributes):
+            reducts = []  
+
+            # Tìm tất cả các tổ hợp thuộc tính
+            for r in range(1, len(attributes) + 1):
+                for subset in combinations(attributes, r):
+                    grouped = df.groupby(list(subset))[decision_column].nunique()
+                    if grouped.eq(1).all():
+                        reducts.append(set(subset))  # Lưu tập rút gọn
+
+            # Loại bỏ tập dư thừa (chỉ giữ tập rút gọn tối thiểu)
+            minimal_reducts = []
+            for reduct in reducts:
+                if not any(reduct > other for other in reducts if reduct != other):
+                    minimal_reducts.append(reduct)
+            return minimal_reducts
+
+        # Hàm tạo luật phân lớp
+        def generate_classification(df, reduct, decision_column):
+            rules = []
+            for _, subset in df.groupby(list(reduct)):
+                decision_values = subset[decision_column].unique()
+                if len(decision_values) == 1:
+                    decision_value = decision_values[0]
+                    conditions = " AND ".join([f"{col} = '{subset[col].iloc[0]}'" for col in reduct])
+                    rules.append(f"IF {conditions} THEN {decision_column} = '{decision_value}'")
+            return rules
+
+        # Tìm các tập rút gọn
+        reducts = find_reducts(df, decision_column, attributes)
+
+        # Đưa kết quả vào context
+        context['reducts'] = [list(reduct) for reduct in reducts]
+
+        if reducts:
+            # Chọn tập rút gọn đầu tiên để tạo luật phân lớp
+            chosen_reduct = list(reducts[0])
+            classification_rules = generate_classification(df, chosen_reduct, decision_column)
+            context['classification_rules'] = classification_rules[:3]  # Hiển thị 3 luật đầu tiên
+        else:
+            context['classification_rules'] = None
+            context['error'] = "Không tìm thấy tập rút gọn."
+
+    elif request.method == 'POST' and 'file_path' in request.session:
+        context['error'] = "Vui lòng tải lên file Excel trước."
+
+    return render(request, 'reduct.html', context)
