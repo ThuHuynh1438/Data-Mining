@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 from django.contrib import messages
 import os
+from django.http import JsonResponse
+from django.conf import settings
 
 # Create your views here.
 def get_home(request):
@@ -106,3 +108,98 @@ def approximation(request):
                 context['error'] = "Không tìm thấy file Excel đã tải lên. Vui lòng tải lại file."
     
     return render(request, 'approximation.html', context)
+
+
+def dependency(request):
+    context = {}
+
+    # Xử lý upload file Excel
+    if request.method == 'POST' and 'excel_file' in request.FILES:
+        excel_file = request.FILES['excel_file']
+
+        # Lưu file Excel vào thư mục tạm
+        file_path = os.path.join(settings.MEDIA_ROOT, excel_file.name)
+        with open(file_path, 'wb+') as destination:
+            for chunk in excel_file.chunks():
+                destination.write(chunk)
+
+        # Lưu đường dẫn file vào session
+        request.session['file_path'] = file_path
+        context['file_path'] = file_path
+        context['file_name'] = excel_file.name
+
+    # Xử lý nhập tập A và tập B
+    elif request.method == 'POST' and 'target_setA' in request.POST and 'attributes_setB' in request.POST:
+        file_path = request.session.get('file_path')
+
+        if file_path and os.path.exists(file_path):  # Kiểm tra file đã tồn tại
+            try:
+                # Đọc dữ liệu từ file Excel
+                data = pd.read_excel(file_path)
+
+                # Lấy tập A và tập B từ form
+                target_setA = request.POST.get('target_setA')
+                attributes_setB = request.POST.get('attributes_setB')
+
+                if not target_setA or not attributes_setB:
+                    raise ValueError('Vui lòng nhập đầy đủ tập A và tập B!')
+
+                target_setA = target_setA.split(',')
+                attributes_setB = attributes_setB.split(',')
+
+                # Tạo các lớp tương đương
+                equivalence_classes_A = create_equivalence_classes(data, target_setA)
+                equivalence_classes_B = create_equivalence_classes(data, attributes_setB)
+
+                # Tính xấp xỉ dưới và độ phụ thuộc thuộc tính k
+                lower_approximations = {}
+                total_lower_count = 0
+
+                for class_name, class_objects in equivalence_classes_A.items():
+                    lower = lower_approximation(class_objects, equivalence_classes_B)
+                    lower_approximations[class_name] = lower
+                    total_lower_count += len(lower)
+
+                total_objects = sum(len(v) for v in equivalence_classes_A.values())
+                dependency_k = total_lower_count / total_objects if total_objects > 0 else 0
+
+                # Đưa kết quả vào context
+                context['equivalence_classes_A'] = equivalence_classes_A
+                context['equivalence_classes_B'] = equivalence_classes_B
+                context['lower_approximations'] = lower_approximations
+                context['dependency_k'] = dependency_k
+
+                # Lưu lại giá trị để hiển thị khi reload
+                context['target_setA'] = ','.join(target_setA)
+                context['attributes_setB'] = ','.join(attributes_setB)
+
+            except Exception as e:
+                context['error'] = f"Đã xảy ra lỗi trong quá trình xử lý: {str(e)}"
+        else:
+            context['error'] = "Không tìm thấy file Excel đã tải lên. Vui lòng tải lại file."
+
+    return render(request, 'dependency.html', context)
+
+
+def create_equivalence_classes(data, attributes):
+    """
+    Tạo các lớp tương đương dựa trên danh sách thuộc tính.
+    """
+    equivalence_classes = {}
+    for index, row in data.iterrows():
+        key = tuple(row[attr] for attr in attributes)
+        if key not in equivalence_classes:
+            equivalence_classes[key] = []
+        equivalence_classes[key].append(f'o{index + 1}')
+    return equivalence_classes
+
+
+def lower_approximation(class_objects, equivalence_classes_B):
+    """
+    Tính xấp xỉ dưới của một lớp tương đương từ tập A qua tập B.
+    """
+    lower = set()
+    for key, objects in equivalence_classes_B.items():
+        if set(objects).issubset(class_objects):
+            lower.update(objects)
+    return list(lower)

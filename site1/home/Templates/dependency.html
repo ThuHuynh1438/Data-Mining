@@ -145,7 +145,7 @@
           cursor: pointer;  
           border-radius: 30%%;
       }
-      #tinhxapxibtn {
+      #tinhxapxibtn, #khaosatbtn {
           background-color: #FFFF;
           color: black;
           padding: 15px 32px;
@@ -307,7 +307,7 @@
 
     <div class="main-content"> 
       <div class="content-header">
-        <h1>Tính xấp xỉ</h1>
+        <h1>Khảo sát phụ thuộc</h1>
       </div>
     
       <div class="uploadexcel">
@@ -326,23 +326,23 @@
         <hr style="border-top: 1px solid #FFFF;"> </br>
 
         {% if file_path %}
-        <div class="thongtinxapxi">
+        <div class="thongtinphuthuoc">
           <form method="post">
             {% csrf_token %}
             <!-- Truyền đường dẫn file đã tải lên -->
             <input type="hidden" name="file_path" value="{{ file_path }}" />
     
             <label >
-              <h2>Nhập tập đối tượng X "cách nhau bởi dấu ,":</h2>
+              <h2>Khảo sát sự phụ thuộc thuộc tính của tập A "nhập thuộc tính tập A":</h2>
             </label>
-            <input type="text" name="target_set" id="target_set" value="{{ target_set|default:'' }}" required />
+            <input type="text" name="target_setA" id="target_setA" value="{{ target_setA|default:'' }}" required />
             </br> </br>
             <label>
-              <h2>Nhập tập thuộc tính "cách nhau bởi dấu ,"</h2>
+              <h2>Vào tập B "Nhập thuộc tính tập B: cách nhau bởi dấu ,"</h2>
             </label>
-            <input type="text" name="attributes_set" id="attributes_set" value="{{ attributes_set|default:'' }}" required />
+            <input type="text" name="attributes_setB" id="attributes_setB" value="{{ attributes_setB|default:'' }}" required />
             </br> </br>
-            <button id="tinhxapxibtn" type="submit">Tính xấp xỉ</button>
+            <button id="khaosatbtn" type="submit">Khảo sát</button>
           </form>
 
         </div>
@@ -353,41 +353,42 @@
       <hr>
       <div class="result">
         <h2>Kết quả tính toán</h2>
-        <p><strong>Tập X (Target Set):</strong> {{ target_set }}</p>
-        <p><strong>Tập thuộc tính (Attributes Set):</strong> {{ attributes_set }}</p>
-        <p><strong>Các lớp tương đương:</strong></p>
+        <p><strong>Tập A:</strong> {{ target_setA }}</p>
+        <p><strong>Tập B:</strong> {{ attributes_setB }}</p>
+        
+        <p><strong>Lớp tương đương của tập A:</strong></p>
         <ul>
-            {% for key, items in equivalence_classes.items %}
-                <li><strong>{{ key }}:</strong> {{ items }}</li>
+            {% for key, value in equivalence_classes_A.items %}
+                <li>{{ key }}: {{ value }}</li>
             {% endfor %}
         </ul>
 
-        <!-- Hiển thị lớp tương đương nếu có -->
-        {% if lower_approx %}
-        <p><strong>Xấp xỉ dưới:</strong> {{ lower_approx }}</p>
-        {% else %}
-        <p><strong>Xấp xỉ dưới:</strong> Không có đối tượng phù hợp.</p>
-        {% endif %}
+        <p><strong>Lớp tương đương của tập B:</strong></p>
+        <ul>
+            {% for key, value in equivalence_classes_B.items %}
+                <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
 
-        {% if upper_approx %}
-        <p><strong>Xấp xỉ trên:</strong> {{ upper_approx }}</p>
-        {% else %}
-        <p><strong>Xấp xỉ trên:</strong> Không có đối tượng phù hợp.</p>
-        {% endif %}
+        <p><strong>Xấp xỉ dưới:</strong></p>
+        <ul>
+            {% for key, value in lower_approximations.items %}
+                <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
 
-        {% if accuracy %}
-        <p><strong>Độ chính xác:</strong> {{ accuracy }}</p>
-        {% else %}
-        <p><strong>Độ chính xác:</strong> Không thể tính toán độ chính xác.</p>
-        {% endif %}
+        <p><strong>Độ phụ thuộc k:</strong> {{ dependency_k }}</p>
+    </div>
 
+    <!-- Hiển thị lỗi nếu có -->
+    {% if error %}
+    <p style="color: red;">{{ error }}</p>
+    {% endif %}
+  
       </div>
 
 
-      <!-- Hiển thị lỗi nếu có -->
-      {% comment %} {% if error %} {% endcomment %}
-      {% comment %} <p style="color: red;">{{ error }}</p> {% endcomment %}
-      {% comment %} {% endif %} {% endcomment %}
+
     </div>
     
 
