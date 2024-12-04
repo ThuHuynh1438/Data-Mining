@@ -353,6 +353,154 @@ def decision_tree_gain(request):
 
     return render(request, 'gain.html')
 
+def decision_tree_gini(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            # Đọc file được tải lên
+            file = request.FILES['file']
+            file_extension = os.path.splitext(file.name)[1]
+            if file_extension == '.csv':
+                data = pd.read_csv(file)
+            elif file_extension in ['.xls', '.xlsx']:
+                data = pd.read_excel(file)
+            else:
+                return render(request, 'gini.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
+
+            # Xử lý dữ liệu
+            X = data.iloc[:, :-1]  # Các thuộc tính
+            y = data.iloc[:, -1]  # Cột nhãn
+
+            # Mã hóa dữ liệu
+            label_encoders = {}
+            for column in X.columns:
+                le = LabelEncoder()
+                X[column] = le.fit_transform(X[column])
+                label_encoders[column] = le
+
+            y_encoder = LabelEncoder()
+            y = y_encoder.fit_transform(y)
+
+            # Chia dữ liệu
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+            # Huấn luyện cây quyết định với tiêu chí Gini
+            clf_gini = DecisionTreeClassifier(criterion='gini', random_state=42)
+            clf_gini.fit(X_train, y_train)
+
+            # Dự đoán và đánh giá
+            y_pred = clf_gini.predict(X_test)
+            accuracy = metrics.accuracy_score(y_test, y_pred)
+
+            # Xuất cấu trúc cây quyết định
+            tree_rules = export_text(clf_gini, feature_names=list(X.columns))
+
+            # Tạo hình ảnh cây quyết định
+            plt.figure(figsize=(20, 10))
+            plot_tree(
+                clf_gini,
+                feature_names=X.columns,
+                class_names=y_encoder.classes_,
+                filled=True
+            )
+            image_path = 'static/decision_tree_gini.png'
+            plt.savefig(image_path)
+            plt.close()
+
+            # Truyền dữ liệu tới template
+            context = {
+                'tree_rules': tree_rules,
+                'accuracy': accuracy,
+                'results': f'Mô hình đạt độ chính xác: {accuracy:.2f}',
+                'image_path': f'/{image_path}',  # Đường dẫn ảnh để hiển thị trên trình duyệt
+            }
+            return render(request, 'gini.html', context)
+
+        except Exception as e:
+            return render(request, 'gini.html', {'error': f'Lỗi xử lý file: {str(e)}'})
+
+    return render(request, 'gini.html')
+
+def decision_tree_if_then(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            # Đọc file được tải lên
+            file = request.FILES['file']
+            file_extension = os.path.splitext(file.name)[1]
+            if file_extension == '.csv':
+                data = pd.read_csv(file)
+            elif file_extension in ['.xls', '.xlsx']:
+                data = pd.read_excel(file)
+            else:
+                return render(request, 'if_then.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
+
+            # Xử lý dữ liệu
+            X = data.iloc[:, :-1]  # Các thuộc tính
+            y = data.iloc[:, -1]  # Cột nhãn
+
+            # Mã hóa dữ liệu
+            label_encoders = {}
+            for column in X.columns:
+                le = LabelEncoder()
+                X[column] = le.fit_transform(X[column])
+                label_encoders[column] = le
+
+            y_encoder = LabelEncoder()
+            y = y_encoder.fit_transform(y)
+
+            # Chia dữ liệu
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+            # Huấn luyện cây quyết định với tiêu chí Gini
+            clf_gini = DecisionTreeClassifier(criterion='gini', random_state=42)
+            clf_gini.fit(X_train, y_train)
+
+            # Dự đoán và đánh giá
+            y_pred = clf_gini.predict(X_test)
+            accuracy = metrics.accuracy_score(y_test, y_pred)
+
+            # Xuất cấu trúc cây quyết định dạng if-then rules
+            tree_rules = export_text(clf_gini, feature_names=list(X.columns))
+            if_then_rules = []
+            for line in tree_rules.split('\n'):
+                # Chuyển đổi các điều kiện cây thành câu lệnh if-then
+                if 'class:' in line:
+                    indent = line.count('|')
+                    condition = f"{'  ' * indent}THEN {line.split('class:')[-1].strip()}"
+                elif '<=' in line or '>' in line:
+                    indent = line.count('|')
+                    condition = f"{'  ' * indent}IF {line.replace('|---', '').strip()}"
+                else:
+                    condition = line.strip()
+                if_then_rules.append(condition)
+
+            formatted_rules = '\n'.join(if_then_rules)
+
+            # Tạo hình ảnh cây quyết định
+            plt.figure(figsize=(20, 10))
+            plot_tree(
+                clf_gini,
+                feature_names=X.columns,
+                class_names=y_encoder.classes_,
+                filled=True
+            )
+            image_path = 'static/decision_tree_gini.png'
+            plt.savefig(image_path)
+            plt.close()
+
+            # Truyền dữ liệu tới template
+            context = {
+                'if_then_rules': formatted_rules,
+                'accuracy': accuracy,
+                'results': f'Mô hình đạt độ chính xác: {accuracy:.2f}',
+                'image_path': f'/{image_path}',  # Đường dẫn ảnh để hiển thị trên trình duyệt
+            }
+            return render(request, 'if_then.html', context)
+
+        except Exception as e:
+            return render(request, 'if_then.html', {'error': f'Lỗi xử lý file: {str(e)}'})
+
+    return render(request, 'if_then.html')
+
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
