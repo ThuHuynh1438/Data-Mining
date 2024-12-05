@@ -1,5 +1,5 @@
 from django.shortcuts import redirect, render
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 import pandas as pd
 import numpy as np
 import os
@@ -18,7 +18,159 @@ from sklearn.cluster import KMeans
 # Create your views here.
 def get_home(request):
     return render(request, 'home.html')
+
+# Hệ số tương quan
+def HSTuongQuan(request):
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            try:
+                uploaded_file = request.FILES['file']
+                # Đọc file Excel
+                data = pd.read_excel(uploaded_file)
+
+                # Kiểm tra dữ liệu đầu vào
+                if data.shape[1] < 2:
+                    return JsonResponse({'error': 'File phải chứa ít nhất hai cột dữ liệu.'}, status=400)
+
+                # Lấy hai cột đầu tiên
+                column_x, column_y = data.columns[:2]
+                x = data[column_x].dropna()
+                y = data[column_y].dropna()
+
+                # Kiểm tra dữ liệu hợp lệ
+                if len(x) == 0 or len(y) == 0:
+                    return JsonResponse({'error': 'Dữ liệu trong cột không hợp lệ hoặc rỗng.'}, status=400)
+
+                # Tính toán các thông số
+                mean_x = np.mean(x)
+                mean_y = np.mean(y)
+                variance_x = np.mean(x ** 2) - mean_x ** 2
+                variance_y = np.mean(y ** 2) - mean_y ** 2
+                mean_xy = np.mean(x * y)
+
+                b1 = (mean_xy - mean_x * mean_y) / variance_x
+                b0 = mean_y - b1 * mean_x
+                r = (mean_xy - mean_x * mean_y) / (np.sqrt(variance_x) * np.sqrt(variance_y))
+
+                # Xác định ý nghĩa của hệ số tương quan
+                if abs(r) <= 0.1:
+                    interpretation = "Mối tương quan quá thấp"
+                elif abs(r) <= 0.3:
+                    interpretation = "Mối tương quan thấp"
+                elif abs(r) <= 0.5:
+                    interpretation = "Mối tương quan trung bình"
+                elif abs(r) <= 0.7:
+                    interpretation = "Mối tương quan cao"
+                else:
+                    interpretation = "Mối tương quan rất cao"
+
+                # Trả về kết quả dưới dạng JSON
+                return JsonResponse({
+                    'column_x': column_x,
+                    'column_y': column_y,
+                    'b1': b1,
+                    'b0': b0,
+                    'r': r,
+                    'equation': f"y = {b1:.3f}x + {b0:.3f}",
+                    'correlation': f"Hệ số tương quan (r): {r:.3f}",
+                    'interpretation': interpretation
+                })
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=400)
+
+    return render(request, 'HSTuongQuan.html')
+
+# Tập phổ biến
 def TapPhoBien(request):
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            try:
+                uploaded_file = request.FILES['file']
+                data = pd.read_excel(uploaded_file)
+
+                # Kiểm tra nếu file chứa ít nhất 2 cột
+                if data.shape[1] < 2:
+                    return JsonResponse({'error': 'File phải chứa ít nhất hai cột dữ liệu.'}, status=400)
+
+                # Lấy tên cột từ request (hoặc mặc định lấy cột đầu tiên và thứ hai)
+                column1 = request.POST.get('column1', data.columns[0])
+                column2 = request.POST.get('column2', data.columns[1])
+
+                # Kiểm tra cột người dùng chọn có tồn tại
+                if column1 not in data.columns or column2 not in data.columns:
+                    return JsonResponse({'error': f'Cột {column1} hoặc {column2} không tồn tại trong file.'}, status=400)
+
+                # Xây dựng bảng transaction_data
+                transaction_data = data.pivot_table(index=column1, columns=column2, aggfunc='size', fill_value=0)
+                transaction_data = transaction_data.applymap(lambda x: 1 if x > 0 else 0)
+
+                # Nhận giá trị minsupp và minconf từ request
+                minsupp = float(request.POST.get('support', 0.5))
+                minconf = float(request.POST.get('confidence', 0.7))
+                num_transactions = len(transaction_data)
+
+                # Hàm tìm các tập phổ biến
+                def find_frequent_itemsets(transaction_data, minsupp):
+                    frequent_itemsets = {}
+                    item_support = (transaction_data.sum(axis=0) / num_transactions).to_dict()
+                    current_itemsets = {frozenset([item]): support for item, support in item_support.items() if support >= minsupp}
+                    frequent_itemsets.update(current_itemsets)
+
+                    k = 2
+                    while current_itemsets:
+                        new_combinations = list(combinations(set().union(*current_itemsets.keys()), k))
+                        itemset_counts = {frozenset(itemset): (transaction_data[list(itemset)].all(axis=1).sum()) for itemset in new_combinations}
+                        current_itemsets = {itemset: count / num_transactions for itemset, count in itemset_counts.items() if count / num_transactions >= minsupp}
+                        frequent_itemsets.update(current_itemsets)
+                        k += 1
+
+                    return frequent_itemsets
+
+                # Hàm tìm tập cực đại
+                def find_maximal_itemsets(frequent_itemsets):
+                    maximal_itemsets = []
+                    for itemset in frequent_itemsets:
+                        is_maximal = True
+                        for other_itemset in frequent_itemsets:
+                            if itemset != other_itemset and itemset.issubset(other_itemset):
+                                is_maximal = False
+                                break
+                        if is_maximal:
+                            maximal_itemsets.append(itemset)
+                    return maximal_itemsets
+
+                # Hàm tạo luật kết hợp
+                def generate_association_rules(frequent_itemsets, minconf):
+                    rules = []
+                    for itemset, support in frequent_itemsets.items():
+                        if len(itemset) > 1:
+                            for consequence in itemset:
+                                antecedent = itemset - frozenset([consequence])
+                                if antecedent:
+                                    antecedent_support = frequent_itemsets[antecedent]
+                                    confidence = support / antecedent_support
+                                    if confidence >= minconf:
+                                        rules.append({
+                                            'antecedent': list(antecedent),
+                                            'consequence': [consequence],
+                                            'confidence': confidence
+                                        })
+                    return rules
+
+                # Tìm các tập phổ biến, cực đại và luật kết hợp
+                frequent_itemsets = find_frequent_itemsets(transaction_data, minsupp)
+                maximal_itemsets = find_maximal_itemsets(frequent_itemsets)
+                association_rules = generate_association_rules(frequent_itemsets, minconf)
+
+                # Trả về kết quả dưới dạng JSON
+                return JsonResponse({
+                    'frequent_itemsets': [{'itemset': list(itemset), 'support': support} for itemset, support in frequent_itemsets.items()],
+                    'maximal_itemsets': [list(itemset) for itemset in maximal_itemsets],
+                    'association_rules': association_rules,
+                })
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=400)
+
     return render(request, 'TapPhoBien.html')
 
 def process_excel(file_path, target_set, attributes_set):
