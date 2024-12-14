@@ -10,54 +10,121 @@
       rel="stylesheet"
     />
     <style>
-        body {
-          margin: 0;
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f9;
-        }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+      }
 
-        .sidebar {
-          width: 300px;
-          background-color: #1e293b;
-          color: white;
-          height: 100vh;
-          position: fixed;
-          padding: 20px;
-          overflow-y: auto;
-        }
+      .sidebar {
+        width: 300px;
+        background-color: #1e293b;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 20px;
+        overflow-y: auto;
+      }
 
-        .sidebar h2 {
-          font-size: 20px;
-          margin-bottom: 20px;
-          color: #f4f4f9;
-        }
+      .sidebar h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: #f4f4f9;
+      }
 
-        .sidebar ul {
-          list-style: none;
-          padding: 0;
-        }
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+      }
 
-        .sidebar ul li {
-          margin: 15px 0;
-        }
+      .sidebar ul li {
+        margin: 15px 0;
+      }
 
-        .sidebar ul li a {
-          color: white;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          padding: 10px;
-          border-radius: 5px;
-          cursor: pointer;
-        }
+      .sidebar ul li a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
 
-        .sidebar ul li a:hover {
-          background-color: #3b82f6;
-        }
+      .sidebar ul li a:hover {
+        background-color: #3b82f6;
+      }
 
-        .sidebar ul li a#home-link {
-          color: white; /* Trở lại màu trắng cho Trang chủ */
-        }
+      .sidebar ul li a#home-link {
+        color: #f8fafc;
+      }
+
+      .sidebar ul li a i,
+      .sidebar ul li a svg {
+        margin-right: 10px;
+        flex-shrink: 0; /* Ngăn icon bị co khi chữ dài */
+      }
+
+      .sub-menu {
+        display: block;  /* Đảm bảo submenu luôn hiển thị */
+        margin-left: 20px;
+      }
+      
+      .sub-menu li a {
+        background-color: transparent; 
+        color: #fff; 
+        display: block;
+        padding: 5px 15px;
+        padding-left: 20px;
+        text-decoration: none;
+      }
+      
+      .sub-menu li a:hover {
+        background-color: #007bff; 
+        color: #fff;
+        border-radius: 5px;
+      }
+
+      .main-content {
+        margin-left: 320px;
+        padding: 20px;
+      }
+
+      .content-header {
+        background-color: #f8fafc;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .content-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #1e293b;
+      }
+
+      .content {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+        display: flex;
+        justify-content: space-between; /* Đẩy các cột cách đều nhau */
+        align-items: stretch;
+      }
+
+      .content img {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .content p {
+        font-size: 16px;
+        color: #374151;
+      }
 
         .sidebar ul li a#popular-link {
           color: #ffd700; /* Màu vàng cho Tập Phổ Biến */
@@ -83,47 +150,6 @@
           background-color: #3b82f6;
         }
 
-        .main-content {
-          margin-left: 320px;
-          padding: 20px;
-        }
-
-        .content-header {
-          background-color: #f8fafc;
-          padding: 15px;
-          border-radius: 5px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
-        }
-
-        .content-header h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #1e293b;
-        }
-
-        .content {
-          background-color: #fff;
-          padding: 20px;
-          border-radius: 5px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          min-height: 400px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .content img {
-          max-width: 100%;
-          border-radius: 10px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .content p {
-          font-size: 16px;
-          color: #374151;
-        }
-
         .uploadexcel {
           text-align: center;
           margin-top: 50px;
@@ -147,12 +173,6 @@
           margin: 4px 2px;
           cursor: pointer; 
 
-      }
-
-      .content {
-        display: flex;
-        justify-content: space-between; /* Đẩy các cột cách đều nhau */
-        align-items: stretch;
       }
     
       .form-container {
@@ -223,6 +243,11 @@
         color: #374151;
         margin-bottom: 10px;
       }
+
+      .result-item {
+        margin-bottom: 30px; /* Tạo khoảng cách giữa các dòng */
+    }
+    
     </style>
   </head>
 
@@ -238,93 +263,31 @@
           </a>
         </li>
     
-        <!-- Các thuật toán không nhóm -->
+        <!-- Tiền xử lý dữ liệu -->
+        <li>
+          <a href="{% url 'HSTuongQuan' %}" id="popular-link">
+          <i class="fas fa-chart-line"></i>
+          Tiền xử lý dữ liệu
+        </a>
+      </li>
+    
+        <!-- Tập phổ biến -->
         <li>
           <a href="{% url 'TapPhoBien' %}">
             <i class="fas fa-layer-group"></i>
             Tập phổ biến và Luật kết hợp
           </a>
         </li>
+    
+        <!-- Phân lớp -->
         <li>
-            <a href="{% url 'HSTuongQuan' %}" id="popular-link">
-            <i class="fas fa-chart-line"></i>
-            Mức độ tương quan
-          </a>
-        </li>
-
-        <!-- Nhóm Cây quyết định -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('decisionTree')">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20px"
-              width="20px"
-              viewBox="0 -960 960 960"
-              fill="#ffffff"
-            >
-              <path
-                d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z"
-              />
+          <a href="#" onclick="toggleSubMenu('classification')">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
+              <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
             </svg>
-            <span>Cây quyết định</span>
+            <span>Phân lớp</span>
           </a>
-          <ul class="sub-menu" id="decisionTree">
-            <li>
-              <a href="gain.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gain
-              </a>
-            </li>
-            <li>
-              <a href="gini.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gini
-              </a>
-            </li>
-            <li>
-              <a href="if_then.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                IF - THEN
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Xấp xỉ -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('approximation')">
-            <i class="fas fa-stream"></i>
-            Xấp xỉ
-          </a>
-          <ul class="sub-menu" id="approximation">
-            <li>
-              <a href="{% url 'approximation' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính xấp xỉ
-              </a>
-            </li>
-            <li>
-              <a href="dependency.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Khảo sát phụ thuộc
-              </a>
-            </li>
-            <li>
-              <a href="reducts.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính reducts
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Gom cụm -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('clustering')">
-            <i class="fas fa-object-group"></i>
-            Gom cụm
-          </a>
-          <ul class="sub-menu" id="clustering">
+          <ul class="sub-menu" id="classification">
             <li>
               <a href="bayes.html">
                 <i class="fas fa-arrow-circle-right"></i>
@@ -338,7 +301,65 @@
               </a>
             </li>
             <li>
-              <a href="kmeans.html">
+              <a href="#" onclick="toggleSubMenu('decisionTree')">
+                <i class="fas fa-arrow-circle-right"></i>
+                Cây quyết định
+              </a>
+              <ul class="sub-menu" id="decisionTree">
+                <li>
+                  <a href="{% url 'gain' %}">
+                    <i class="fas fa-sitemap"></i>
+                    Gain
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'gini' %}">
+                    <i class="fas fa-tree"></i>
+                    Gini
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Tập thô -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('reducts')">
+            <i class="fas fa-stream"></i>
+            Tập thô
+          </a>
+          <ul class="sub-menu" id="reducts">
+            <li>
+              <a href="{% url 'dependency' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Khảo sát sự phụ thuộc
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'approximation' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính xấp xỉ
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'reduct' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính các tập thô
+              </a>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Gom cụm -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('clustering')">
+            <i class="fas fa-object-group"></i>
+            Gom cụm
+          </a>
+          <ul class="sub-menu" id="clustering">
+            <li>
+              <a href="{% url 'kmeans' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 K-Means
               </a>
@@ -346,7 +367,7 @@
             <li>
               <a href="kohonen.html">
                 <i class="fas fa-arrow-circle-right"></i>
-                Kohonen
+                Mạng Kohonen
               </a>
             </li>
           </ul>
@@ -381,6 +402,13 @@
               <ul>
                 <li id="column_x"></li>
                 <li id="column_y"></li>
+                <li id="mean_x"></li>
+                <li id="mean_y"></li>
+                <li id="mean_xy"></li>
+                <li id="variance_x"></li>
+                <li id="phsai_x"></li>
+                <li id="phsai_y"></li>
+                <li id="b1"></li>
                 <li id="correlation"></li>
                 <li id="equation"></li>
                 <li id="interpretation"></li>
@@ -416,12 +444,40 @@
                       document.getElementById("result").innerHTML =
                         `<div style="color: red;">${result.error}</div>`;
                     } else {
-                      document.getElementById("column_x").textContent = `Cột X: ${result.column_x}`;
-                      document.getElementById("column_y").textContent = `Cột Y: ${result.column_y}`;
-                      document.getElementById("correlation").textContent = `Hệ số tương quan (r): ${result.r}`;
-                      document.getElementById("equation").textContent = `Phương trình: ${result.equation}`;
-                      document.getElementById("interpretation").textContent = `Diễn giải: ${result.interpretation}`;
-                    }
+                        document.getElementById("column_x").innerHTML = `<strong>Cột X:</strong> ${result.column_x}`;
+                        document.getElementById("column_x").classList.add("result-item");
+                      
+                        document.getElementById("column_y").innerHTML = `<strong>Cột Y:</strong> ${result.column_y}`;
+                        document.getElementById("column_y").classList.add("result-item");
+
+                        document.getElementById("mean_x").innerHTML = `<strong>x̄:</strong> ${result.mean_x}`;
+                        document.getElementById("mean_x").classList.add("result-item");
+
+                        document.getElementById("mean_y").innerHTML = `<strong>ȳ:</strong> ${result.mean_y}`;
+                        document.getElementById("mean_y").classList.add("result-item");
+
+                        document.getElementById("mean_xy").innerHTML = `<strong>x\u0304y\u0304:</strong> ${result.mean_xy}`;
+                        document.getElementById("mean_xy").classList.add("result-item");
+
+                        document.getElementById("variance_x").innerHTML = `<strong>Độ lệch chuẩn cột X:</strong> ${result.variance_x}`;
+                        document.getElementById("variance_x").classList.add("result-item");
+
+                        document.getElementById("phsai_x").innerHTML = `<strong>Phương sai cột X:</strong> ${result.phsai_x}`;
+                        document.getElementById("phsai_x").classList.add("result-item");
+
+                        document.getElementById("phsai_y").innerHTML = `<strong>Phương sai cột Y:</strong> ${result.phsai_y}`;
+                        document.getElementById("phsai_y").classList.add("result-item");
+
+                        document.getElementById("b1").innerHTML = `<strong>Hệ số hồi quy (b1):</strong> ${result.b1}`;
+                        document.getElementById("b1").classList.add("result-item");
+
+                        document.getElementById("correlation").innerHTML = `<strong>Hệ số tương quan (r):</strong> ${result.r}`;
+                        document.getElementById("correlation").classList.add("result-item");
+
+                        document.getElementById("interpretation").innerHTML = `<strong>Diễn giải:</strong> ${result.interpretation}`;
+                        document.getElementById("interpretation").classList.add("result-item");
+
+                      }
                   } catch (error) {
                     console.error("Error:", error);
                     document.getElementById("result").innerHTML =

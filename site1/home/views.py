@@ -46,6 +46,8 @@ def HSTuongQuan(request):
                 mean_y = np.mean(y)
                 variance_x = np.mean(x ** 2) - mean_x ** 2
                 variance_y = np.mean(y ** 2) - mean_y ** 2
+                phsai_x = np.sqrt(variance_x)
+                phsai_y = np.sqrt(variance_y)
                 mean_xy = np.mean(x * y)
 
                 b1 = (mean_xy - mean_x * mean_y) / variance_x
@@ -64,6 +66,7 @@ def HSTuongQuan(request):
                 else:
                     interpretation = "Mối tương quan rất cao"
 
+
                 # Trả về kết quả dưới dạng JSON
                 return JsonResponse({
                     'column_x': column_x,
@@ -71,7 +74,12 @@ def HSTuongQuan(request):
                     'b1': b1,
                     'b0': b0,
                     'r': r,
-                    'equation': f"y = {b1:.3f}x + {b0:.3f}",
+                    'mean_x': mean_x,
+                    'mean_y': mean_y,
+                    'mean_xy': mean_xy,
+                    'variance_x': variance_x,
+                    'phsai_x': phsai_x,
+                    'phsai_y': phsai_y,
                     'correlation': f"Hệ số tương quan (r): {r:.3f}",
                     'interpretation': interpretation
                 })
