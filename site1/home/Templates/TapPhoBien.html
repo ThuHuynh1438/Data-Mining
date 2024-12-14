@@ -421,6 +421,7 @@
       
         <!-- Kết quả tính toán -->
         <div class="result-container">
+          <h2>Kết quả</h2>
           <div id="resultSection">
             <!-- Kết quả sẽ được thêm vào đây -->
           </div>
@@ -444,7 +445,7 @@
               document.getElementById("resultSection").innerHTML =
                 "<div style='color: red;'>" + data.error + "</div>";
             } else {
-              let resultHTML = "<h2>Kết Quả</h2>";
+              let resultHTML = "";
     
               // Tập phổ biến
               resultHTML += "<h3>Tập phổ biến</h3><ul>";
