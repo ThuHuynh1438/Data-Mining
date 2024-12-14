@@ -145,20 +145,20 @@
           display: inline-block;
           font-size: 16px;
           margin: 4px 2px;
-          cursor: pointer;
+          cursor: pointer; 
 
       }
 
       .content {
         display: flex;
+        justify-content: space-between; /* Đẩy các cột cách đều nhau */
         align-items: stretch;
-        height: auto; 
       }
     
       .form-container {
-        width: 50%;
+        width: 50%; 
         padding: 20px;
-        border-right: 2px solid #ccc; 
+        border-right: 2px solid #ccc;
         box-sizing: border-box;
       }
     
@@ -202,8 +202,9 @@
       }
     
       .result-container {
-        width: 50%;
+        width: 50%; 
         padding: 20px;
+        box-sizing: border-box;
       }
     
       .result-container h2 {
@@ -239,13 +240,13 @@
     
         <!-- Các thuật toán không nhóm -->
         <li>
-          <a href="{% url 'TapPhoBien' %}" id="popular-link">
+          <a href="{% url 'TapPhoBien' %}">
             <i class="fas fa-layer-group"></i>
             Tập phổ biến và Luật kết hợp
           </a>
         </li>
         <li>
-          <a href="attribute_correlation.html">
+            <a href="{% url 'HSTuongQuan' %}" id="popular-link">
             <i class="fas fa-chart-line"></i>
             Mức độ tương quan
           </a>
@@ -354,111 +355,79 @@
     </div>
 
     <div class="main-content">
-      <div class="content-header">
-        <h1>Tập Phổ Biến</h1>
-      </div>
-
-      <div class="content">
-        <!-- Form nhập liệu -->
-        <div class="form-container">
-          <h2>Nhập Dữ Liệu</h2>
-          <form id="calculationForm">
-            <div class="form-group">
-              <label for="excel_file">Upload Excel</label>
-              <input type="file" id="excel_file" name="file" accept=".xlsx, .xls, .csv" required />
-            </div>
-      
-            <div class="form-group">
-              <label for="min_support">Nhập giá trị Min-Support</label>
-              <input
-                type="number"
-                id="min_support"
-                name="support"
-                step="0.01"
-                placeholder="0.2"
-                required
-              />
-            </div>
-      
-            <div class="form-group">
-              <label for="min_confidence">Nhập giá trị Min-Confidence</label>
-              <input
-                type="number"
-                id="min_confidence"
-                name="confidence"
-                step="0.01"
-                placeholder="0.5"
-                required
-              />
-            </div>
-      
-            <div class="form-group">
-              <button type="button" onclick="submitForm()">Tính toán</button>
-            </div>
-          </form>
+        <div class="content-header">
+          <h1>Mức độ tương quan</h1>
         </div>
-      
-        <!-- Kết quả tính toán -->
-        <div class="result-container">
-          <div id="resultSection">
-            <!-- Kết quả sẽ được thêm vào đây -->
+  
+        <div class="content">
+            <!-- Form nhập liệu -->
+            <div class="form-container">
+              <h2>Nhập Dữ Liệu</h2>
+              <form id="calculationForm" enctype="multipart/form-data" method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                  <label for="excel_file">Upload Excel</label>
+                  <input type="file" id="excel_file" name="file" accept=".xlsx, .xls, .csv" required />
+                </div>
+                <div class="form-group">
+                  <button type="submit">Tính toán</button>
+                </div>
+              </form>
+            </div>
+          
+            <!-- Kết quả -->
+            <div class="result-container" id="result">
+              <h2>Kết quả</h2>
+              <ul>
+                <li id="column_x"></li>
+                <li id="column_y"></li>
+                <li id="correlation"></li>
+                <li id="equation"></li>
+                <li id="interpretation"></li>
+              </ul>
+            </div>
           </div>
-        </div>
-      </div>
-    
-    <script>
-      function submitForm() {
-        const formData = new FormData(document.getElementById("calculationForm"));
-    
-        fetch("{% url 'TapPhoBien' %}", {
-          method: "POST",
-          body: formData,
-          headers: {
-            "X-CSRFToken": "{{ csrf_token }}", // Django CSRF token
-          },
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              document.getElementById("resultSection").innerHTML =
-                "<div style='color: red;'>" + data.error + "</div>";
-            } else {
-              let resultHTML = "<h2>Kết Quả</h2>";
-    
-              // Tập phổ biến
-              resultHTML += "<h3>Tập phổ biến</h3><ul>";
-              data.frequent_itemsets.forEach((item) => {
-                resultHTML += `<li>${item.itemset.join(", ")} - Support: ${
-                  item.support
-                }</li>`;
-              });
-              resultHTML += "</ul>";
-    
-              // Tập phổ biến tối đại
-              resultHTML += "<h3>Tập phổ biến tối đại</h3><ul>";
-              data.maximal_itemsets.forEach((item) => {
-                resultHTML += `<li>${item.join(", ")}</li>`;
-              });
-              resultHTML += "</ul>";
-    
-              // Luật kết hợp
-              resultHTML += "<h3>Luật kết hợp</h3><ul>";
-              data.association_rules.forEach((rule) => {
-                resultHTML += `<li>${rule.antecedent.join(", ")} → ${
-                  rule.consequence.join(", ")
-                } - Confidence: ${rule.confidence.toFixed(2)}</li>`;
-              });
-              resultHTML += "</ul>";
-    
-              document.getElementById("resultSection").innerHTML = resultHTML;
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            document.getElementById("resultSection").innerHTML =
-              "<div style='color: red;'>Có lỗi xảy ra trong quá trình xử lý!</div>";
-          });
-      }
-    </script>
-  </body>
-</html>
+            
+            <script>
+                document.getElementById("calculationForm").addEventListener("submit", async (e) => {
+                  e.preventDefault();
+              
+                  const fileInput = document.getElementById("excel_file");
+                  if (!fileInput.files.length) {
+                    alert("Vui lòng chọn một file Excel!");
+                    return;
+                  }
+              
+                  const formData = new FormData();
+                  formData.append("file", fileInput.files[0]);
+              
+                  try {
+                    const response = await fetch("{% url 'HSTuongQuan' %}", {
+                      method: "POST",
+                      body: formData,
+                      headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                      },
+                    });
+              
+                    const result = await response.json();
+              
+                    if (result.error) {
+                      document.getElementById("result").innerHTML =
+                        `<div style="color: red;">${result.error}</div>`;
+                    } else {
+                      document.getElementById("column_x").textContent = `Cột X: ${result.column_x}`;
+                      document.getElementById("column_y").textContent = `Cột Y: ${result.column_y}`;
+                      document.getElementById("correlation").textContent = `Hệ số tương quan (r): ${result.r}`;
+                      document.getElementById("equation").textContent = `Phương trình: ${result.equation}`;
+                      document.getElementById("interpretation").textContent = `Diễn giải: ${result.interpretation}`;
+                    }
+                  } catch (error) {
+                    console.error("Error:", error);
+                    document.getElementById("result").innerHTML =
+                      `<div style="color: red;">Có lỗi xảy ra trong quá trình xử lý!</div>`;
+                  }
+                });
+              </script>                
+        </body>
+        </html>       

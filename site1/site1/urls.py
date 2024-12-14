@@ -24,6 +24,7 @@ urlpatterns = [
     path('dependency/', home.dependency, name='dependency'),
     path('reduct/', home.reduct, name='reduct'),
     path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
+    path('HSTuongQuan/', home.HSTuongQuan, name='HSTuongQuan'),
     path('gain/', home.decision_tree_gain, name='gain'),
     path('gini/', home.decision_tree_gini, name='gini'),
     path('kmeans/', home.kmeans_clustering, name='kmeans'),
