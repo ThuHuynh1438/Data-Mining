@@ -231,7 +231,7 @@
         margin-bottom: 30px; /* Tạo khoảng cách giữa các dòng */
     }
 
-
+    .table-container { margin-top: 20px; overflow-x: auto; }
 
     </style>
   </head>
@@ -376,6 +376,14 @@
             <button id="upload-button" type="submit">Tải lên</button>
             <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
           </form>
+
+            {% if data_preview %}
+              <h2>Preview Dữ Liệu</h2>
+              <div class="table-container">
+                  {{ data_preview|safe }}
+              </div>
+            {% endif %}
+
   
           </br>
           <hr style="border-top: 1px solid #FFFF;"> </br>

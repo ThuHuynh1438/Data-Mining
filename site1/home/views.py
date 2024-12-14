@@ -230,6 +230,25 @@ def approximation(request):
     context['file_path'] = file_path
     context['file_name'] = os.path.basename(file_path) if file_path else None
 
+    # Hiển thị preview dữ liệu nếu đã tải file lên
+    if file_path and os.path.exists(file_path):
+        try:
+            # Xác định định dạng file
+            file_extension = os.path.splitext(file_path)[1].lower()
+            if file_extension == '.csv':
+                data = pd.read_csv(file_path)
+            elif file_extension in ['.xls', '.xlsx']:
+                data = pd.read_excel(file_path)
+            else:
+                raise ValueError("Định dạng file không được hỗ trợ.")
+
+            # Tạo bảng preview
+            data_preview = data.head(10).to_html(classes='table table-striped')  # Hiển thị 10 dòng đầu
+            context['data_preview'] = data_preview  # Thêm vào context
+
+        except Exception as e:
+            context['error'] = f"Không thể hiển thị dữ liệu: {str(e)}"
+
     if request.method == 'POST':
         if 'excel_file' in request.FILES:  # Form tải file Excel
             excel_file = request.FILES['excel_file']
@@ -248,11 +267,28 @@ def approximation(request):
             context['file_path'] = file_path
             context['message'] = "Tải file thành công! Vui lòng nhập thông tin để tính xấp xỉ."
 
+            # Hiển thị preview dữ liệu
+            try:
+                file_extension = os.path.splitext(file_path)[1].lower()
+                if file_extension == '.csv':
+                    data = pd.read_csv(file_path)
+                elif file_extension in ['.xls', '.xlsx']:
+                    data = pd.read_excel(file_path)
+                else:
+                    raise ValueError("Định dạng file không được hỗ trợ.")
+
+                data_preview = data.head(10).to_html(classes='table table-striped')
+                context['data_preview'] = data_preview
+
+            except Exception as e:
+                context['error'] = f"Không thể hiển thị dữ liệu: {str(e)}"
+
         elif 'target_set' in request.POST and 'attributes_set' in request.POST:  # Form nhập tập X và tập thuộc tính
             # Lấy dữ liệu từ session
             file_path = request.session.get('file_path')
             file_name = request.session.get('file_name')  # Lấy tên file từ session
-            
+            context['data_preview'] = request.session.get('data_preview', None)  # Giữ lại preview dữ liệu
+
             if file_path and file_name and os.path.exists(file_path):  # Kiểm tra file có tồn tại
                 try:
                     # Lấy tập đối tượng và tập thuộc tính từ input
@@ -275,8 +311,6 @@ def approximation(request):
                     # Sau khi tính toán xong, xóa dữ liệu trong session để tránh lưu lại thông tin
                     del request.session['file_path']  # Xóa đường dẫn file
                     del request.session['file_name']  # Xóa tên file
-                    del request.session['target_set']  # Xóa tập X nếu cần
-                    del request.session['attributes_set']  # Xóa tập thuộc tính nếu cần
 
                 except Exception as e:
                     context['error'] = f"Đã xảy ra lỗi trong quá trình xử lý: {str(e)}"
@@ -284,6 +318,7 @@ def approximation(request):
                 context['error'] = "Không tìm thấy file Excel đã tải lên. Vui lòng tải lại file."
     
     return render(request, 'approximation.html', context)
+
 
 
 def dependency(request):
@@ -304,6 +339,24 @@ def dependency(request):
         context['file_path'] = file_path
         context['file_name'] = excel_file.name
 
+        # Xác định loại file (CSV hoặc Excel)
+        try:
+            file_extension = os.path.splitext(file_path)[1].lower()  # Lấy phần mở rộng
+            if file_extension == '.csv':
+                data = pd.read_csv(file_path)
+            elif file_extension in ['.xls', '.xlsx']:
+                data = pd.read_excel(file_path)
+            else:
+                raise ValueError("Định dạng file không được hỗ trợ. Chỉ hỗ trợ .csv, .xls, và .xlsx.")
+
+            # Hiển thị xem trước dữ liệu
+            data_preview = data.head().to_html(classes='table table-striped')
+            request.session['data_preview'] = data_preview  # Lưu vào session
+            context['data_preview'] = data_preview
+
+        except Exception as e:
+            context['error'] = f"Đã xảy ra lỗi khi xử lý file: {str(e)}"
+
     # Xử lý nhập tập A và tập B
     elif request.method == 'POST' and 'target_setA' in request.POST and 'attributes_setB' in request.POST:
         file_path = request.session.get('file_path')
@@ -312,6 +365,11 @@ def dependency(request):
             try:
                 # Đọc dữ liệu từ file Excel
                 data = pd.read_excel(file_path)
+
+                # Lấy preview dữ liệu từ session
+                data_preview = request.session.get('data_preview')
+                if data_preview:
+                    context['data_preview'] = data_preview  # Thêm preview vào context
 
                 # Lấy tập A và tập B từ form
                 target_setA = request.POST.get('target_setA')
@@ -357,6 +415,8 @@ def dependency(request):
     return render(request, 'dependency.html', context)
 
 
+
+
 def create_equivalence_classes(data, attributes):
     """
     Tạo các lớp tương đương dựa trên danh sách thuộc tính.
@@ -400,6 +460,25 @@ def reduct(request):
 
         # Đọc dữ liệu từ file Excel
         df = pd.read_excel(file_path)
+
+        # Hiển thị preview dữ liệu nếu đã tải file lên
+        if file_path and os.path.exists(file_path):
+            try:
+                # Xác định định dạng file
+                file_extension = os.path.splitext(file_path)[1].lower()
+                if file_extension == '.csv':
+                    data = pd.read_csv(file_path)
+                elif file_extension in ['.xls', '.xlsx']:
+                    data = pd.read_excel(file_path)
+                else:
+                    raise ValueError("Định dạng file không được hỗ trợ.")
+
+                # Tạo bảng preview
+                data_preview = data.head(10).to_html(classes='table table-striped')  # Hiển thị 10 dòng đầu
+                context['data_preview'] = data_preview  # Thêm vào context
+
+            except Exception as e:
+                context['error'] = f"Không thể hiển thị dữ liệu: {str(e)}"
 
         # Loại bỏ cột đầu tiên để không xét nó khi tìm rút gọn
         columns = df.columns
