@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 import pandas as pd
 import numpy as np
 import os
+from sklearn.tree import _tree
 from django.conf import settings
 from itertools import combinations
 from sklearn.preprocessing import LabelEncoder
@@ -13,8 +14,15 @@ from sklearn.tree import export_text
 import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
 from sklearn.cluster import KMeans
-
-
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler
+from django.http import JsonResponse, HttpResponse
+from django.core.files.storage import FileSystemStorage
+from django.views.decorators.csrf import csrf_exempt
+import io
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 # Create your views here.
 def get_home(request):
     return render(request, 'home.html')
@@ -446,24 +454,38 @@ def reduct(request):
         context['error'] = "Vui lòng tải lên file Excel trước."
 
     return render(request, 'reduct.html', context)
+
 def decision_tree_gain(request):
     if request.method == 'POST' and request.FILES.get('file'):
         try:
-            # Đọc file được tải lên
+            steps = []  # Lưu trữ các bước xử lý
+            calculations = []  # Lưu chi tiết các phép tính
+            if_then_rules = []  # Lưu các luật IF-THEN
+
+            # Bước 1: Đọc tệp đã tải lên
             file = request.FILES['file']
             file_extension = os.path.splitext(file.name)[1]
+            steps.append("Tệp đã được tải lên thành công.")
+
             if file_extension == '.csv':
                 data = pd.read_csv(file)
             elif file_extension in ['.xls', '.xlsx']:
                 data = pd.read_excel(file)
             else:
-                return render(request, 'gain.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
+                steps.append("Lỗi: Tệp phải ở định dạng CSV hoặc Excel.")
+                return render(request, 'gain.html', {'error': 'Vui lòng tải lên tệp CSV hoặc Excel!', 'steps': steps})
 
-            # Xử lý dữ liệu
-            X = data.iloc[:, :-1]  # Các thuộc tính
-            y = data.iloc[:, -1]  # Cột nhãn
+            steps.append("Dữ liệu đã được đọc thành công từ tệp.")
 
-            # Mã hóa dữ liệu
+            # Hiển thị xem trước dữ liệu
+            data_preview = data.head().to_html(classes='table table-striped')
+
+            # Bước 2: Chia dữ liệu thành đặc trưng (X) và mục tiêu (y)
+            X = data.iloc[:, :-1]  # Tất cả các cột trừ cột cuối
+            y = data.iloc[:, -1]  # Cột cuối cùng
+            steps.append("Dữ liệu đã được chia thành đặc trưng (X) và mục tiêu (y).")
+
+            # Bước 3: Mã hóa dữ liệu dạng phân loại
             label_encoders = {}
             for column in X.columns:
                 le = LabelEncoder()
@@ -472,22 +494,98 @@ def decision_tree_gain(request):
 
             y_encoder = LabelEncoder()
             y = y_encoder.fit_transform(y)
+            steps.append("Dữ liệu phân loại đã được mã hóa.")
 
-            # Chia dữ liệu
+            # Hàm tính entropy
+            def calculate_entropy(column):
+                counts = column.value_counts(normalize=True)
+                entropy = -sum(counts * np.log2(counts))
+                return entropy
+
+            # Hàm tính độ lợi thông tin
+            def calculate_information_gain(data, feature, target):
+                total_entropy = calculate_entropy(data[target])
+
+                # Entropy có trọng số của các tập con
+                values = data[feature].unique()
+                weighted_entropy = 0
+                calculations.append(f"\nTính độ lợi thông tin cho đặc trưng: {feature}")
+                calculations.append(f"Entropy(S) = -Σ(p * log2(p)) với p là xác suất của các lớp trong mục tiêu")
+                calculations.append(f"Entropy(S) = {total_entropy:.4f}")
+
+                for value in values:
+                    subset = data[data[feature] == value]
+                    prob = len(subset) / len(data)
+                    subset_entropy = calculate_entropy(subset[target])
+                    weighted_entropy += prob * subset_entropy
+                    calculations.append(f"\nTập con {feature}={value}: Kích thước={len(subset)}, Xác suất={prob:.4f}, Entropy={subset_entropy:.4f}")
+
+                info_gain = total_entropy - weighted_entropy
+                calculations.append(f"\nEntropy có trọng số = Σ(prob * Entropy(tập con)) = {weighted_entropy:.4f}")
+                calculations.append(f"\nĐộ lợi thông tin = Entropy(S) - Entropy có trọng số = {info_gain:.4f}")
+                return total_entropy, weighted_entropy, info_gain
+
+            # Bước 4: Tính toán entropy và độ lợi thông tin cho tất cả các đặc trưng
+            data['Target'] = y  # Thêm cột mục tiêu vào DataFrame để tính toán
+            best_feature = None
+            best_info_gain = -1
+
+            for feature in X.columns:
+                total_entropy, weighted_entropy, info_gain = calculate_information_gain(data, feature, 'Target')
+                calculations.append(
+                    f"Đặc trưng: {feature} -> Entropy(S) = {total_entropy:.4f}, Entropy có trọng số = {weighted_entropy:.4f}, Độ lợi thông tin = {info_gain:.4f}"
+                )
+
+                if info_gain > best_info_gain:
+                    best_feature = feature
+                    best_info_gain = info_gain
+
+            steps.append(f"Đặc trưng được chọn với độ lợi thông tin cao nhất: {best_feature} (Gain = {best_info_gain:.4f}).")
+
+            # Bước 5: Huấn luyện cây quyết định bằng ID3
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-            # Huấn luyện cây quyết định với tiêu chí Gain (Entropy)
             clf_entropy = DecisionTreeClassifier(criterion='entropy', random_state=42)
             clf_entropy.fit(X_train, y_train)
+            steps.append("Mô hình cây quyết định đã được huấn luyện bằng tiêu chí entropy.")
 
-            # Dự đoán và đánh giá
+            # Bước 6: Dự đoán và tính độ chính xác
             y_pred = clf_entropy.predict(X_test)
             accuracy = metrics.accuracy_score(y_test, y_pred)
+            steps.append(f"Dự đoán đã được thực hiện. Độ chính xác của mô hình: {accuracy:.2f}.")
 
-            # Xuất cấu trúc cây quyết định
+            # Bước 7: Xuất cấu trúc cây và tạo các luật IF-THEN
             tree_rules = export_text(clf_entropy, feature_names=list(X.columns))
+            steps.append("Cấu trúc cây quyết định đã được xuất.")
 
-            # Tạo hình ảnh cây quyết định
+            # Tạo các luật IF-THEN
+            def generate_rules(tree, feature_names, target_names):
+                tree_ = tree.tree_
+                feature_name = [
+                    feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"
+                    for i in tree_.feature
+                ]
+
+                paths = []
+
+                def recurse(node, path, paths):
+                    if tree_.feature[node] != _tree.TREE_UNDEFINED:
+                        name = feature_name[node]
+                        threshold = tree_.threshold[node]
+                        left_path = path + [f"({name} <= {threshold})"]
+                        right_path = path + [f"({name} > {threshold})"]
+                        recurse(tree_.children_left[node], left_path, paths)
+                        recurse(tree_.children_right[node], right_path, paths)
+                    else:
+                        path_str = " AND ".join(path)
+                        class_name = target_names[np.argmax(tree_.value[node])]
+                        paths.append(f"IF {path_str} THEN {class_name}")
+
+                recurse(0, [], paths)
+                return paths
+
+            if_then_rules = generate_rules(clf_entropy, list(X.columns), y_encoder.classes_)
+
+            # Bước 8: Vẽ và lưu hình ảnh cây quyết định
             plt.figure(figsize=(20, 10))
             plot_tree(
                 clf_entropy,
@@ -498,39 +596,61 @@ def decision_tree_gain(request):
             image_path = 'static/decision_tree_entropy.png'
             plt.savefig(image_path)
             plt.close()
+            steps.append("Hình ảnh cây quyết định đã được lưu.")
 
-            # Truyền dữ liệu tới template
+            # Truyền dữ liệu sang giao diện
             context = {
+                'steps': steps,
+                'calculations': calculations,
                 'tree_rules': tree_rules,
+                'if_then_rules': if_then_rules,
                 'accuracy': accuracy,
-                'results': f'Mô hình đạt độ chính xác: {accuracy:.2f}',
-                'image_path': f'/{image_path}',  # Đường dẫn ảnh để hiển thị trên trình duyệt
+                'results': f'Độ chính xác của mô hình: {accuracy:.2f}',
+                'image_path': f'/{image_path}',
+                'data_preview': data_preview,
             }
             return render(request, 'gain.html', context)
 
         except Exception as e:
-            return render(request, 'gain.html', {'error': f'Lỗi xử lý file: {str(e)}'})
+            steps.append(f"Lỗi xử lý: {str(e)}")
+            return render(request, 'gain.html', {'error': f'Lỗi xử lý tệp: {str(e)}', 'steps': steps})
 
     return render(request, 'gain.html')
+
+
+
 
 def decision_tree_gini(request):
     if request.method == 'POST' and request.FILES.get('file'):
         try:
-            # Đọc file được tải lên
+            steps = []  # Store steps
+            calculations = []  # Store detailed calculations
+            if_then_rules = []  # Store IF-THEN rules
+
+            # Step 1: Read uploaded file
             file = request.FILES['file']
             file_extension = os.path.splitext(file.name)[1]
+            steps.append("File uploaded successfully.")
+
             if file_extension == '.csv':
                 data = pd.read_csv(file)
             elif file_extension in ['.xls', '.xlsx']:
                 data = pd.read_excel(file)
             else:
-                return render(request, 'gini.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
+                steps.append("Error: File must be in CSV or Excel format.")
+                return render(request, 'gini.html', {'error': 'Please upload a CSV or Excel file!', 'steps': steps})
 
-            # Xử lý dữ liệu
-            X = data.iloc[:, :-1]  # Các thuộc tính
-            y = data.iloc[:, -1]  # Cột nhãn
+            steps.append("Data successfully loaded from the file.")
 
-            # Mã hóa dữ liệu
+            # Preview data
+            data_preview = data.head().to_html(classes='table table-striped')
+
+            # Step 2: Split data into features (X) and target (y)
+            X = data.iloc[:, :-1]  # All columns except the last
+            y = data.iloc[:, -1]  # The last column
+            steps.append("Data split into features (X) and target (y).")
+
+            # Step 3: Encode categorical data
             label_encoders = {}
             for column in X.columns:
                 le = LabelEncoder()
@@ -539,22 +659,98 @@ def decision_tree_gini(request):
 
             y_encoder = LabelEncoder()
             y = y_encoder.fit_transform(y)
+            steps.append("Categorical data encoded successfully.")
 
-            # Chia dữ liệu
+            # Function to calculate Gini Index
+            def calculate_gini_index(column):
+                counts = column.value_counts(normalize=True)
+                gini = 1 - sum(counts ** 2)
+                return gini
+
+            # Function to calculate Gini Gain
+            def calculate_gini_gain(data, feature, target):
+                total_gini = calculate_gini_index(data[target])
+
+                # Weighted Gini of subsets
+                values = data[feature].unique()
+                weighted_gini = 0
+                calculations.append(f"\nCalculating Gini Gain for feature: {feature}")
+                calculations.append(f"Gini(S) = 1 - Σ(p²), where p is the probability of each class in the target")
+                calculations.append(f"Gini(S) = {total_gini:.4f}")
+
+                for value in values:
+                    subset = data[data[feature] == value]
+                    prob = len(subset) / len(data)
+                    subset_gini = calculate_gini_index(subset[target])
+                    weighted_gini += prob * subset_gini
+                    calculations.append(f"\nSubset {feature}={value}: Size={len(subset)}, Probability={prob:.4f}, Gini={subset_gini:.4f}")
+
+                gini_gain = total_gini - weighted_gini
+                calculations.append(f"\nWeighted Gini = Σ(prob * Gini(subset)) = {weighted_gini:.4f}")
+                calculations.append(f"\nGini Gain = Gini(S) - Weighted Gini = {gini_gain:.4f}")
+                return total_gini, weighted_gini, gini_gain
+
+            # Step 4: Calculate Gini and Gini Gain for all features
+            data['Target'] = y  # Add target column to DataFrame for calculations
+            best_feature = None
+            best_gini_gain = -1
+
+            for feature in X.columns:
+                total_gini, weighted_gini, gini_gain = calculate_gini_gain(data, feature, 'Target')
+                calculations.append(
+                    f"Feature: {feature} -> Gini(S) = {total_gini:.4f}, Weighted Gini = {weighted_gini:.4f}, Gini Gain = {gini_gain:.4f}"
+                )
+
+                if gini_gain > best_gini_gain:
+                    best_feature = feature
+                    best_gini_gain = gini_gain
+
+            steps.append(f"Best feature selected with highest Gini Gain: {best_feature} (Gain = {best_gini_gain:.4f}).")
+
+            # Step 5: Train decision tree using Gini criterion
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-            # Huấn luyện cây quyết định với tiêu chí Gini
             clf_gini = DecisionTreeClassifier(criterion='gini', random_state=42)
             clf_gini.fit(X_train, y_train)
+            steps.append("Decision tree model trained using Gini Index criterion.")
 
-            # Dự đoán và đánh giá
+            # Step 6: Predict and calculate accuracy
             y_pred = clf_gini.predict(X_test)
             accuracy = metrics.accuracy_score(y_test, y_pred)
+            steps.append(f"Predictions made. Model accuracy: {accuracy:.2f}.")
 
-            # Xuất cấu trúc cây quyết định
+            # Step 7: Export tree structure and create IF-THEN rules
             tree_rules = export_text(clf_gini, feature_names=list(X.columns))
+            steps.append("Decision tree structure exported.")
 
-            # Tạo hình ảnh cây quyết định
+            # Generate IF-THEN rules
+            def generate_rules(tree, feature_names, target_names):
+                tree_ = tree.tree_
+                feature_name = [
+                    feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"
+                    for i in tree_.feature
+                ]
+
+                paths = []
+
+                def recurse(node, path, paths):
+                    if tree_.feature[node] != _tree.TREE_UNDEFINED:
+                        name = feature_name[node]
+                        threshold = tree_.threshold[node]
+                        left_path = path + [f"({name} <= {threshold})"]
+                        right_path = path + [f"({name} > {threshold})"]
+                        recurse(tree_.children_left[node], left_path, paths)
+                        recurse(tree_.children_right[node], right_path, paths)
+                    else:
+                        path_str = " AND ".join(path)
+                        class_name = target_names[np.argmax(tree_.value[node])]
+                        paths.append(f"IF {path_str} THEN {class_name}")
+
+                recurse(0, [], paths)
+                return paths
+
+            if_then_rules = generate_rules(clf_gini, list(X.columns), y_encoder.classes_)
+
+            # Step 8: Visualize and save decision tree image
             plt.figure(figsize=(20, 10))
             plot_tree(
                 clf_gini,
@@ -565,101 +761,28 @@ def decision_tree_gini(request):
             image_path = 'static/decision_tree_gini.png'
             plt.savefig(image_path)
             plt.close()
+            steps.append("Decision tree image saved.")
 
-            # Truyền dữ liệu tới template
+            # Pass data to template
             context = {
+                'steps': steps,
+                'calculations': calculations,
                 'tree_rules': tree_rules,
+                'if_then_rules': if_then_rules,
                 'accuracy': accuracy,
-                'results': f'Mô hình đạt độ chính xác: {accuracy:.2f}',
-                'image_path': f'/{image_path}',  # Đường dẫn ảnh để hiển thị trên trình duyệt
+                'results': f'Model accuracy: {accuracy:.2f}',
+                'image_path': f'/{image_path}',
+                'data_preview': data_preview,
             }
             return render(request, 'gini.html', context)
 
         except Exception as e:
-            return render(request, 'gini.html', {'error': f'Lỗi xử lý file: {str(e)}'})
+            steps.append(f"Processing error: {str(e)}")
+            return render(request, 'gini.html', {'error': f'File processing error: {str(e)}', 'steps': steps})
 
     return render(request, 'gini.html')
 
-def decision_tree_if_then(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        try:
-            # Đọc file được tải lên
-            file = request.FILES['file']
-            file_extension = os.path.splitext(file.name)[1]
-            if file_extension == '.csv':
-                data = pd.read_csv(file)
-            elif file_extension in ['.xls', '.xlsx']:
-                data = pd.read_excel(file)
-            else:
-                return render(request, 'if_then.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
 
-            # Xử lý dữ liệu
-            X = data.iloc[:, :-1]  # Các thuộc tính
-            y = data.iloc[:, -1]  # Cột nhãn
-
-            # Mã hóa dữ liệu
-            label_encoders = {}
-            for column in X.columns:
-                le = LabelEncoder()
-                X[column] = le.fit_transform(X[column])
-                label_encoders[column] = le
-
-            y_encoder = LabelEncoder()
-            y = y_encoder.fit_transform(y)
-
-            # Chia dữ liệu
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-            # Huấn luyện cây quyết định với tiêu chí Gini
-            clf_gini = DecisionTreeClassifier(criterion='gini', random_state=42)
-            clf_gini.fit(X_train, y_train)
-
-            # Dự đoán và đánh giá
-            y_pred = clf_gini.predict(X_test)
-            accuracy = metrics.accuracy_score(y_test, y_pred)
-
-            # Xuất cấu trúc cây quyết định dạng if-then rules
-            tree_rules = export_text(clf_gini, feature_names=list(X.columns))
-            if_then_rules = []
-            for line in tree_rules.split('\n'):
-                # Chuyển đổi các điều kiện cây thành câu lệnh if-then
-                if 'class:' in line:
-                    indent = line.count('|')
-                    condition = f"{'  ' * indent}THEN {line.split('class:')[-1].strip()}"
-                elif '<=' in line or '>' in line:
-                    indent = line.count('|')
-                    condition = f"{'  ' * indent}IF {line.replace('|---', '').strip()}"
-                else:
-                    condition = line.strip()
-                if_then_rules.append(condition)
-
-            formatted_rules = '\n'.join(if_then_rules)
-
-            # Tạo hình ảnh cây quyết định
-            plt.figure(figsize=(20, 10))
-            plot_tree(
-                clf_gini,
-                feature_names=X.columns,
-                class_names=y_encoder.classes_,
-                filled=True
-            )
-            image_path = 'static/decision_tree_gini.png'
-            plt.savefig(image_path)
-            plt.close()
-
-            # Truyền dữ liệu tới template
-            context = {
-                'if_then_rules': formatted_rules,
-                'accuracy': accuracy,
-                'results': f'Mô hình đạt độ chính xác: {accuracy:.2f}',
-                'image_path': f'/{image_path}',  # Đường dẫn ảnh để hiển thị trên trình duyệt
-            }
-            return render(request, 'if_then.html', context)
-
-        except Exception as e:
-            return render(request, 'if_then.html', {'error': f'Lỗi xử lý file: {str(e)}'})
-
-    return render(request, 'if_then.html')
 
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
@@ -772,3 +895,60 @@ def kmeans_clustering(request):
             return render(request, 'kmeans.html', {'error': f'Lỗi xử lý file: {str(e)}'})
 
     return render(request, 'kmeans.html')
+
+def naive_bayes_prediction(request):
+    if request.method == 'POST':
+        message = ""
+        error = None
+        result_class = None
+
+        try:
+            # Lấy tệp Excel từ form
+            excel_file = request.FILES['excel_file']
+            df = pd.read_excel(excel_file)
+
+            # Chuẩn hóa các tên cột và thuộc tính nhập vào (chuyển thành chữ thường và loại bỏ khoảng trắng)
+            df.columns = df.columns.str.strip().str.lower()  # Chuẩn hóa tên cột
+            attributes_set = request.POST.get('attributes_set').split(',')
+            attributes_set = [attribute.strip().lower() for attribute in attributes_set]  # Chuẩn hóa thuộc tính nhập vào
+
+            # Kiểm tra xem tất cả các thuộc tính có tồn tại trong bảng dữ liệu không
+            if not all(attribute in df.columns for attribute in attributes_set):
+                error = f"Các thuộc tính không tồn tại trong file Excel. Các cột có sẵn là: {', '.join(df.columns)}"
+                return render(request, 'bayes.html', {'error': error})
+
+            # Chọn tập thuộc tính và tập nhãn
+            X = df[attributes_set]
+            y = df['play']  # 'play' là cột nhãn trong dữ liệu
+
+            # Áp dụng Label Encoding để chuyển các giá trị chuỗi thành số
+            le = LabelEncoder()
+            for column in X.columns:
+                X[column] = le.fit_transform(X[column])  # Chuyển các giá trị chuỗi thành số
+
+            # Chuyển cột nhãn 'play' thành số
+            y = le.fit_transform(y)
+
+            # Chia dữ liệu thành tập huấn luyện và kiểm tra
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+            # Áp dụng thuật toán Naive Bayes
+            model = GaussianNB()
+            model.fit(X_train, y_train)
+
+            # Dự đoán trên tập kiểm tra
+            y_pred = model.predict(X_test)
+
+            # Đánh giá mô hình
+            accuracy = accuracy_score(y_test, y_pred)
+
+            # Gửi kết quả về giao diện người dùng
+            result_class = f"Kết quả dự đoán: Độ chính xác của mô hình là {accuracy * 100:.2f}%."
+            message = "Dự đoán thành công!"
+
+        except Exception as e:
+            error = f"Đã có lỗi xảy ra: {str(e)}"
+        
+        return render(request, 'bayes.html', {'message': message, 'error': error, 'result_class': result_class})
+    
+    return render(request, 'bayes.html')
