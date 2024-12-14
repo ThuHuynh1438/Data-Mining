@@ -26,6 +26,6 @@ urlpatterns = [
     path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
     path('gain/', home.decision_tree_gain, name='gain'),
     path('gini/', home.decision_tree_gini, name='gini'),
-    path('ifthen/', home.decision_tree_if_then, name='if-then'),
     path('kmeans/', home.kmeans_clustering, name='kmeans'),
+    path('bayes/', home.naive_bayes_prediction, name='bayes'),
 ]

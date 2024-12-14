@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Naive Bayes Prediction</title>
+</head>
+<body>
+    <h1>Naive Bayes Prediction</h1>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="excel_file">Chọn file Excel:</label>
+        <input type="file" name="excel_file" id="excel_file" required>
+        <br><br>
+
+        <label for="attributes_set">Nhập các thuộc tính cần dự đoán (cách nhau bằng dấu phẩy):</label>
+        <input type="text" name="attributes_set" id="attributes_set" required>
+        <br><br>
+
+        <input type="submit" value="Dự đoán">
+    </form>
+
+    {% if result_class %}
+        <h2>Kết quả dự đoán:</h2>
+        <p>{{ result_class }}</p>
+    {% endif %}
+</body>
+</html>
