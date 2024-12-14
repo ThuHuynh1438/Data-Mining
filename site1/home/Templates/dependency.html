@@ -56,7 +56,8 @@
       }
 
       .sidebar ul li a#home-link {
-        color: #f8fafc;
+        color: #ffd700; /* Màu vàng cho chữ "Trang chủ" */
+        font-weight: bold; /* Làm đậm chữ */
       }
 
       .sidebar ul li a i,
@@ -66,23 +67,27 @@
       }
 
       .sub-menu {
-        display: block;  /* Đảm bảo submenu luôn hiển thị */
-        margin-left: 20px;
+      display: none; /* Ẩn submenu ban đầu */
+      margin-left: 20px; /* Thụt lề so với menu chính */
       }
-      
-      .sub-menu li a {
-        background-color: transparent; 
-        color: #fff; 
-        display: block;
-        padding: 5px 15px;
-        padding-left: 20px;
-        text-decoration: none;
+
+    .sub-menu li a {
+      background-color: transparent; /* Xóa màu nền mặc định */
+      color: #fff; /* Màu chữ */
+      display: block; /* Hiển thị dạng block */
+      padding: 5px 15px;
+      padding-left: 20px; /* Thụt thêm lề cho mục con */
+      text-decoration: none;
       }
-      
+
       .sub-menu li a:hover {
-        background-color: #007bff; 
-        color: #fff;
-        border-radius: 5px;
+        background-color: #007bff; /* Màu xanh dương khi hover */
+        color: #fff; /* Màu chữ vẫn trắng khi hover */
+        border-radius: 5px; /* Thêm góc bo tròn */
+      }
+
+      .sidebar ul li.active > .sub-menu {
+        display: block;
       }
 
       .main-content {
@@ -111,8 +116,8 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         min-height: 400px;
         display: flex;
-        justify-content: space-between; /* Đẩy các cột cách đều nhau */
-        align-items: stretch;
+        justify-content: center;
+        align-items: center;
       }
 
       .content img {
@@ -126,54 +131,10 @@
         color: #374151;
       }
 
-        .sidebar ul li a#popular-link {
-          color: #ffd700;
-          font-weight: bold; /* Làm đậm chữ */
-        }
-
-        .sidebar ul li a i,
-        .sidebar ul li a svg {
-          margin-right: 10px;
-          flex-shrink: 0; /* Ngăn icon bị co khi chữ dài */
-        }
-
-        .sub-menu {
-          display: none;
-          padding-left: 20px;
-        }
-
-        .sub-menu li {
-          margin: 10px 0;
-        }
-
-        .sub-menu li a {
-          background-color: #3b82f6;
-        }
-
-        .uploadexcel {
-          text-align: center;
-          margin-top: 50px;
-          color: white;
-          background-color:#1e293b;
-
-      }
-
       #file-upload {
           display: none;
       }
 
-      #upload-button {
-          background-color: #FFFF;
-          color: black;
-          padding: 15px 32px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: 16px;
-          margin: 4px 2px;
-          cursor: pointer; 
-
-      }
     
       .form-container {
         width: 50%; 
@@ -216,6 +177,28 @@
         border-radius: 5px;
         cursor: pointer;
       }
+      #upload-button {
+        background-color: #FFFF;
+        color: black;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;  
+        border-radius: 30%%;
+    }
+
+
+    input[type="text"] {
+      width: 500px; 
+      height: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+
+  }
     
       .form-group button:hover {
         background-color: #3b82f6;
@@ -247,52 +230,7 @@
       .result-item {
         margin-bottom: 30px; /* Tạo khoảng cách giữa các dòng */
     }
-        .uploadexcel {
-          text-align: center;
-          margin-top: 50px;
-          color: white;
-          background-color:#1e293b;
 
-      }
-
-
-      #file-upload {
-          display: none;
-      }
-
-      #upload-button {
-          background-color: #FFFF;
-          color: black;
-          padding: 15px 32px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: 16px;
-          margin: 4px 2px;
-          cursor: pointer;  
-          border-radius: 30%%;
-      }
-      #tinhxapxibtn, #khaosatbtn {
-          background-color: #FFFF;
-          color: black;
-          padding: 15px 32px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: 16px;
-          margin: 4px 2px;
-          cursor: pointer;  
-          border-radius: 30%;
-      }
-
-      input[type="text"] {
-        width: 500px; 
-        height: 16px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-
-    }
 
 
     </style>
@@ -304,7 +242,7 @@
       <ul>
         <!-- Trang chủ -->
         <li>
-          <a href="#" id="home-link" onclick="showHome()">
+          <a href="{% url 'homepage' %}" id="home-link" onclick="showHome()">
             <i class="fas fa-home"></i>
             <span>Trang chủ</span>
           </a>
@@ -313,10 +251,10 @@
         <!-- Tiền xử lý dữ liệu -->
         <li>
           <a href="{% url 'HSTuongQuan' %}">
-          <i class="fas fa-chart-line"></i>
-          Tiền xử lý dữ liệu
-        </a>
-      </li>
+            <i class="fas fa-chart-line"></i>
+            Tiền xử lý dữ liệu
+          </a>
+        </li>
     
         <!-- Tập phổ biến -->
         <li>
@@ -328,7 +266,7 @@
     
         <!-- Phân lớp -->
         <li>
-          <a href="#" onclick="toggleSubMenu('classification')">
+          <a href="#" id="popular-link" onclick="toggleSubMenu('classification')">
             <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
               <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
             </svg>
@@ -336,7 +274,7 @@
           </a>
           <ul class="sub-menu" id="classification">
             <li>
-              <a href="bayes.html">
+              <a href="{% url 'bayes' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Bayes
               </a>
@@ -378,7 +316,7 @@
           </a>
           <ul class="sub-menu" id="reducts">
             <li>
-              <a href="{% url 'dependency' %}" id="popular-link">
+              <a href="{% url 'dependency' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Khảo sát sự phụ thuộc
               </a>
@@ -400,7 +338,7 @@
     
         <!-- Gom cụm -->
         <li>
-          <a href="#" onclick="toggleSubMenu('clustering')">
+          <a href="#" id="popular-link" onclick="toggleSubMenu('clustering')">
             <i class="fas fa-object-group"></i>
             Gom cụm
           </a>
@@ -420,72 +358,95 @@
           </ul>
         </li>
       </ul>
-    </div>
+    </div> 
 
     <div class="main-content"> 
       <div class="content-header">
         <h1>Khảo sát phụ thuộc</h1>
       </div>
-    
-      <div class="uploadexcel">
-                    <!-- Form nhập liệu -->
-                    <div class="form-container">
-                      <h2>Nhập Dữ Liệu</h2>
-                      <form id="calculationForm" enctype="multipart/form-data" method="post">
-                        {% csrf_token %}
-                        <div class="form-group">
-                          <label for="excel_file">Upload Excel</label>
-                          <input type="file" id="excel_file" name="file" accept=".xlsx, .xls, .csv" required />
-                        </div>
-                        <div class="form-group">
-                          <button type="submit">Tính toán</button>
-                        </div>
-                      </form>
-                    </div>
-    
-    
- 
-      <hr>
-      <div class="result">
-        <h2>Kết quả tính toán</h2>
-        <p><strong>Tập A:</strong> {{ target_setA }}</p>
-        <p><strong>Tập B:</strong> {{ attributes_setB }}</p>
-        
-        <p><strong>Lớp tương đương của tập A:</strong></p>
-        <ul>
-            {% for key, value in equivalence_classes_A.items %}
-                <li>{{ key }}: {{ value }}</li>
-            {% endfor %}
-        </ul>
 
-        <p><strong>Lớp tương đương của tập B:</strong></p>
-        <ul>
-            {% for key, value in equivalence_classes_B.items %}
-                <li>{{ key }}: {{ value }}</li>
-            {% endfor %}
-        </ul>
-
-        <p><strong>Xấp xỉ dưới:</strong></p>
-        <ul>
-            {% for key, value in lower_approximations.items %}
-                <li>{{ key }}: {{ value }}</li>
-            {% endfor %}
-        </ul>
-
-        <p><strong>Độ phụ thuộc k:</strong> {{ dependency_k }}</p>
-    </div>
-
-    <!-- Hiển thị lỗi nếu có -->
-    {% if error %}
-    <p style="color: red;">{{ error }}</p>
-    {% endif %}
+     <div class="content">
+        <div class="form-container">
+          <h1>Tải file Excel lên tại đây</h1>
   
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+            <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
+            <button id="upload-button" type="submit">Tải lên</button>
+            <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
+          </form>
+  
+          </br>
+          <hr style="border-top: 1px solid #FFFF;"> </br>
+  
+          {% comment %} {% if file_path %} {% endcomment %}
+          <div class="thongtinphuthuoc">
+            <form method="post">
+              {% csrf_token %}
+              <!-- Truyền đường dẫn file đã tải lên -->
+              <input type="hidden" name="file_path" value="{{ file_path }}" />
+  
+              <label >
+                <h2>Khảo sát sự phụ thuộc thuộc tính của tập A "nhập thuộc tính tập A":</h2>
+              </label>
+              <input type="text" name="target_setA" id="target_setA" value="{{ target_setA|default:'' }}" required />
+              </br> </br>
+              <label>
+                <h2>Tập B "Nhập thuộc tính tập B: cách nhau bởi dấu ,"</h2>
+              </label>
+              <input type="text" name="attributes_setB" id="attributes_setB" value="{{ attributes_setB|default:'' }}" required />
+              </br> </br>
+             <div class= "form-group"> <button id="khaosatbtn" type="submit">Khảo sát</button></div>
+            </form>
+  
+          </div>
+          {% comment %} {% endif %} {% endcomment %}
+        </div>
+     
+
+
+        <hr>
+        <div class="result-container">
+          <h2>Kết quả khảo sát sự phụ thuộc thuộc tính của tập A vào tập B</h2>
+          <p><strong>Tập A:</strong> {{ target_setA }}</p>
+          <p><strong>Tập B:</strong> {{ attributes_setB }}</p>
+
+          <p><strong>Lớp tương đương của tập A:</strong></p>
+          <ul>
+              {% for key, value in equivalence_classes_A.items %}
+                  <li>{{ key }}: {{ value }}</li>
+              {% endfor %}
+          </ul>
+
+          <p><strong>Lớp tương đương của tập B:</strong></p>
+          <ul>
+              {% for key, value in equivalence_classes_B.items %}
+                  <li>{{ key }}: {{ value }}</li>
+              {% endfor %}
+          </ul>
+
+          <p><strong>Xấp xỉ dưới:</strong></p>
+          <ul>
+              {% for key, value in lower_approximations.items %}
+                  <li>{{ key }}: {{ value }}</li>
+              {% endfor %}
+          </ul>
+
+          <p><strong>Độ phụ thuộc k:</strong> {{ dependency_k }}</p>
+        </div>
+
+        <!-- Hiển thị lỗi nếu có -->
+        {% if error %}
+        <p style="color: red;">{{ error }}</p>
+        {% endif %}
+
       </div>
 
 
 
     </div>
-    
+
 
 
     <script>
