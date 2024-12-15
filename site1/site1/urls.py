@@ -27,8 +27,8 @@ urlpatterns = [
     path('HSTuongQuan/', home.HSTuongQuan, name='HSTuongQuan'),
     path('gain/', home.decision_tree_gain, name='gain'),
     path('gini/', home.decision_tree_gini, name='gini'),
-path('kmeans/', home.kmeans_view, name='kmeans'),
-      path('bayes/', home.bayes_view, name='bayes'),
-      path('laplace/', home.laplace_view, name='laplace'), 
-      path('kohonen/', home.kohonen_view, name='kohonen'), 
+    path('kmeans/', home.kmeans_view, name='kmeans'),
+    path('bayes/', home.bayes_view, name='bayes'),
+    path('laplace/', home.laplace_view, name='laplace'), 
+    path('kohonen/', home.kohonen_view, name='kohonen'), 
 ]
