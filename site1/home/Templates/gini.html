@@ -10,16 +10,19 @@
         .table-container { margin-top: 20px; overflow-x: auto; }
         img { max-width: 100%; height: auto; }
         pre { background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .step-list, .rule-list { margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 class="text-center">Decision Tree Analysis (Gini Index)</h1>
-
+        {% load static %}
+        <!-- Display errors -->
         {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
 
+        <!-- Form to upload CSV/Excel file -->
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="mb-3">
@@ -29,38 +32,56 @@
             <button type="submit" class="btn btn-primary">Upload and Analyze</button>
         </form>
 
+        <!-- Display steps taken in the process -->
         {% if steps %}
-            <h3 class="mt-4">Steps</h3>
-            <ul>
-                {% for step in steps %}
-                    <li>{{ step }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-
-        {% if data_preview %}
-            <h3 class="mt-4">Data Preview</h3>
-            <div class="table-container">
-                {{ data_preview | safe }}
+            <div class="step-list">
+                <h3 class="mt-4">Process Steps</h3>
+                <ul>
+                    {% for step in steps %}
+                        <li>{{ step }}</li>
+                    {% endfor %}
+                </ul>
             </div>
         {% endif %}
 
+        <!-- Preview of uploaded data -->
+        {% if data_preview %}
+            <div class="table-container">
+                <h3 class="mt-4">Data Preview (Full Dataset)</h3>
+                <div>{{ data_preview | safe }}</div> <!-- Full dataset displayed -->
+            </div>
+        {% endif %}
+
+        <!-- Display Gini and Gini Gain calculations -->
         {% if calculations %}
-            <h3 class="mt-4">Gini and Gini Gain Calculations</h3>
-            <pre>
-                {% for calc in calculations %}
-                    {{ calc }}
-                {% endfor %}
-            </pre>
+            <div>
+                <h3 class="mt-4">Gini and Gini Gain Calculations</h3>
+                <pre>
+                    {% for calc in calculations %}
+                        {{ calc }}
+                    {% endfor %}
+                </pre>
+            </div>
         {% endif %}
 
+        <!-- Display Decision Tree Rules -->
         {% if tree_rules %}
-            <h3 class="mt-4">Decision Tree Rules</h3>
-            <pre>{{ tree_rules }}</pre>
+            <div class="mt-4">
+                <h3>Decision Tree Rules</h3>
+                <pre>{{ tree_rules }}</pre>
+            </div>
         {% endif %}
-
+        {% if feature_ginis %}
+        <h3>Gini Impurity for Features:</h3>
+        <ul>
+            {% for feature, gini in feature_ginis.items %}
+                <li>{{ feature }}: {{ gini|floatformat:4 }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+        <!-- Display IF-THEN rules -->
         {% if if_then_rules %}
-            <h3 class="mt-4">Generated IF-THEN Rules</h3>
+            <h3>IF-THEN Rules:</h3>
             <ul>
                 {% for rule in if_then_rules %}
                     <li>{{ rule }}</li>
@@ -68,16 +89,22 @@
             </ul>
         {% endif %}
 
+        <!-- Display Decision Tree Visualization -->
         {% if image_path %}
-            <h3 class="mt-4">Decision Tree Visualization</h3>
-            <img src="{{ image_path }}" alt="Decision Tree">
-        {% endif %}
+    <h3 class="mt-4">Decision Tree Visualization</h3>
+    <img src="{% static image_path %}" alt="Decision Tree Visualization">
+{% endif %}
 
+        <!-- Display Model Accuracy -->
         {% if results %}
-            <h3 class="mt-4">Model Accuracy</h3>
-            <p>{{ results }}</p>
+            <div class="mt-4">
+                <h3>Model Accuracy</h3>
+                <p>{{ results }}</p>
+            </div>
         {% endif %}
     </div>
+
+    <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

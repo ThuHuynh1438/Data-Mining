@@ -10,163 +10,232 @@
       rel="stylesheet"
     />
     <style>
-        body {
-          margin: 0;
-          font-family: Arial, sans-serif;
-          background-color: #f4f4f9;
-        }
-
-        .sidebar {
-          width: 300px;
-          background-color: #1e293b;
-          color: white;
-          height: 100vh;
-          position: fixed;
-          padding: 20px;
-          overflow-y: auto;
-        }
-
-        .sidebar h2 {
-          font-size: 20px;
-          margin-bottom: 20px;
-          color: #f4f4f9;
-        }
-
-        .sidebar ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        .sidebar ul li {
-          margin: 15px 0;
-        }
-
-        .sidebar ul li a {
-          color: white;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          padding: 10px;
-          border-radius: 5px;
-          cursor: pointer;
-        }
-
-        .sidebar ul li a:hover {
-          background-color: #3b82f6;
-        }
-
-        .sidebar ul li a#home-link {
-          color: #ffd700; /* Màu vàng cho chữ "Trang chủ" */
-          font-weight: bold; /* Làm đậm chữ */
-        }
-
-        .sidebar ul li a i,
-        .sidebar ul li a svg {
-          margin-right: 10px;
-          flex-shrink: 0; /* Ngăn icon bị co khi chữ dài */
-        }
-
-        .sub-menu {
-          display: none;
-          padding-left: 20px;
-        }
-
-        .sub-menu li {
-          margin: 10px 0;
-        }
-
-        .sub-menu li a {
-          background-color: #3b82f6;
-        }
-
-        .main-content {
-          margin-left: 320px;
-          padding: 20px;
-        }
-
-        .content-header {
-          background-color: #f8fafc;
-          padding: 15px;
-          border-radius: 5px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
-        }
-
-        .content-header h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #1e293b;
-        }
-
-        .content {
-          background-color: #fff;
-          padding: 20px;
-          border-radius: 5px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          min-height: 400px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
-        .content img {
-          max-width: 100%;
-          border-radius: 10px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-
-        .content p {
-          font-size: 16px;
-          color: #374151;
-        }
-
-        .uploadexcel {
-          text-align: center;
-          margin-top: 50px;
-          color: white;
-          background-color:#1e293b;
-
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
       }
 
+      .sidebar {
+        width: 300px;
+        background-color: #1e293b;
+        color: white;
+        height: 100vh;
+        position: fixed;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .sidebar h2 {
+        font-size: 20px;
+        margin-bottom: 20px;
+        color: #f4f4f9;
+      }
+
+      .sidebar ul {
+        list-style: none;
+        padding: 0;
+      }
+
+      .sidebar ul li {
+        margin: 15px 0;
+      }
+
+      .sidebar ul li a {
+        color: white;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      .sidebar ul li a:hover {
+        background-color: #3b82f6;
+      }
+
+      .sidebar ul li a#home-link {
+        color: #FFFFFFFF; /* Màu vàng cho chữ "Trang chủ" */
+      }
+
+      .sidebar ul li a#popular-link {
+        color: #ffd700;
+        font-weight: bold; /* Làm đậm chữ */
+      }
+
+      .sidebar ul li a i,
+      .sidebar ul li a svg {
+        margin-right: 10px;
+        flex-shrink: 0; /* Ngăn icon bị co khi chữ dài */
+      }
+
+      .sub-menu {
+      display: none; /* Ẩn submenu ban đầu */
+      margin-left: 20px; /* Thụt lề so với menu chính */
+      }
+
+    .sub-menu li a {
+      background-color: transparent; /* Xóa màu nền mặc định */
+      color: #fff; /* Màu chữ */
+      display: block; /* Hiển thị dạng block */
+      padding: 5px 15px;
+      padding-left: 20px; /* Thụt thêm lề cho mục con */
+      text-decoration: none;
+      }
+
+      .sub-menu li a:hover {
+        background-color: #007bff; /* Màu xanh dương khi hover */
+        color: #fff; /* Màu chữ vẫn trắng khi hover */
+        border-radius: 5px; /* Thêm góc bo tròn */
+      }
+
+      .sidebar ul li.active > .sub-menu {
+        display: block;
+      }
+
+      .main-content {
+        margin-left: 320px;
+        padding: 20px;
+      }
+
+      .content-header {
+        background-color: #f8fafc;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      .content-header h1 {
+        margin: 0;
+        font-size: 24px;
+        color: #1e293b;
+      }
+
+      .content {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        min-height: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .content img {
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .content p {
+        font-size: 16px;
+        color: #374151;
+      }
 
       #file-upload {
           display: none;
       }
 
-      #upload-button {
-          background-color: #FFFF;
-          color: black;
-          padding: 15px 32px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: 16px;
-          margin: 4px 2px;
-          cursor: pointer;  
-          border-radius: 30%%;
+    
+      .form-container {
+        width: 50%; 
+        padding: 20px;
+        border-right: 2px solid #ccc;
+        box-sizing: border-box;
       }
-      #tinhxapxibtn, #khaosatbtn {
-          background-color: #FFFF;
-          color: black;
-          padding: 15px 32px;
-          text-align: center;
-          text-decoration: none;
-          display: inline-block;
-          font-size: 16px;
-          margin: 4px 2px;
-          cursor: pointer;  
-          border-radius: 30%;
+    
+      .form-container h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #1e293b;
       }
-
-      input[type="text"] {
-        width: 500px; 
-        height: 16px;
+    
+      .form-group {
+        margin-bottom: 20px;
+      }
+    
+      .form-group label {
+        display: block;
+        font-size: 18px;
+        color: #1e293b;
+        margin-bottom: 5px;
+      }
+    
+      .form-group input {
+        width: 100%;
         padding: 10px;
+        font-size: 16px;
         border: 1px solid #ccc;
         border-radius: 5px;
-
+      }
+    
+      .form-group button {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #1e293b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      #upload-button {
+        background-color: #FFFF;
+        color: black;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;  
+        border-radius: 30%%;
     }
 
+
+    input[type="text"] {
+      width: 500px; 
+      height: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+
+  }
+    
+      .form-group button:hover {
+        background-color: #3b82f6;
+      }
+    
+      .result-container {
+        width: 50%; 
+        padding: 20px;
+        box-sizing: border-box;
+      }
+    
+      .result-container h2 {
+        font-size: 24px;
+        color: #1e293b;
+        margin-bottom: 20px;
+      }
+    
+      .result-container ul {
+        list-style: none;
+        padding: 0;
+      }
+    
+      .result-container li {
+        font-size: 18px;
+        color: #374151;
+        margin-bottom: 10px;
+      }
+
+      .result-item {
+        margin-bottom: 30px; /* Tạo khoảng cách giữa các dòng */
+    }
+
+    .table-container { margin-top: 20px; overflow-x: auto; }
 
     </style>
   </head>
@@ -182,102 +251,34 @@
             <span>Trang chủ</span>
           </a>
         </li>
-
-        <!-- Các thuật toán không nhóm -->
+    
+        <!-- Tiền xử lý dữ liệu -->
+        <li>
+          <a href="{% url 'HSTuongQuan' %}">
+            <i class="fas fa-chart-line"></i>
+            Tiền xử lý dữ liệu
+          </a>
+        </li>
+    
+        <!-- Tập phổ biến -->
         <li>
           <a href="{% url 'TapPhoBien' %}">
             <i class="fas fa-layer-group"></i>
-            Tập phổ biến
+            Tập phổ biến và Luật kết hợp
           </a>
         </li>
+    
+        <!-- Phân lớp -->
         <li>
-          <a href="association_rules.html">
-            <i class="fas fa-random"></i>
-            Luật kết hợp
-          </a>
-        </li>
-        <li>
-          <a href="attribute_correlation.html">
-            <i class="fas fa-chart-line"></i>
-            Mức độ tương quan
-          </a>
-        </li>
-
-        <!-- Nhóm Cây quyết định -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('decisionTree')">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20px"
-              width="20px"
-              viewBox="0 -960 960 960"
-              fill="#ffffff"
-            >
-              <path
-                d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z"
-              />
+          <a href="#" onclick="toggleSubMenu('classification')">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
+              <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
             </svg>
-            <span>Cây quyết định</span>
+            <span>Phân lớp</span>
           </a>
-          <ul class="sub-menu" id="decisionTree">
+          <ul class="sub-menu" id="classification">
             <li>
-              <a href="gain.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gain
-              </a>
-            </li>
-            <li>
-              <a href="gini.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gini
-              </a>
-            </li>
-            <li>
-              <a href="if_then.html">
-                <i class="fas fa-arrow-circle-right"></i>
-                IF - THEN
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Xấp xỉ -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('approximation')">
-            <i class="fas fa-stream"></i>
-            Xấp xỉ
-          </a>
-          <ul class="sub-menu" id="approximation">
-            <li>
-              <a href="{% url 'approximation' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính xấp xỉ
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'dependency' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Khảo sát phụ thuộc
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'reduct' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính reducts
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Gom cụm -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('clustering')">
-            <i class="fas fa-object-group"></i>
-            Gom cụm
-          </a>
-          <ul class="sub-menu" id="clustering">
-            <li>
-              <a href="bayes.html">
+              <a href="{% url 'bayes' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Bayes
               </a>
@@ -289,7 +290,65 @@
               </a>
             </li>
             <li>
-              <a href="kmeans.html">
+              <a href="#" onclick="toggleSubMenu('decisionTree')">
+                <i class="fas fa-arrow-circle-right"></i>
+                Cây quyết định
+              </a>
+              <ul class="sub-menu" id="decisionTree">
+                <li>
+                  <a href="{% url 'gain' %}">
+                    <i class="fas fa-sitemap"></i>
+                    Gain
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'gini' %}">
+                    <i class="fas fa-tree"></i>
+                    Gini
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Tập thô -->
+        <li>
+          <a href="#" id="popular-link" onclick="toggleSubMenu('reducts')">
+            <i class="fas fa-stream"></i>
+            Tập thô
+          </a>
+          <ul class="sub-menu" id="reducts">
+            <li>
+              <a href="{% url 'dependency' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Khảo sát sự phụ thuộc
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'approximation' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính xấp xỉ
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'reduct' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính các tập thô
+              </a>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Gom cụm -->
+        <li>
+          <a href="#" onclick="toggleSubMenu('clustering')">
+            <i class="fas fa-object-group"></i>
+            Gom cụm
+          </a>
+          <ul class="sub-menu" id="clustering">
+            <li>
+              <a href="{% url 'kmeans' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 K-Means
               </a>
@@ -297,67 +356,77 @@
             <li>
               <a href="kohonen.html">
                 <i class="fas fa-arrow-circle-right"></i>
-                Kohonen
+                Mạng Kohonen
               </a>
             </li>
           </ul>
         </li>
       </ul>
-    </div>
+    </div> 
 
     <div class="main-content"> 
       <div class="content-header">
-        <h1>Khảo sát phụ thuộc</h1>
+        <h1>Tính tập thô</h1>
       </div>
     
-      <div class="uploadexcel">
-        <h1>Tải file Excel lên tại đây</h1>
-        <p>Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân tích giúp bạn</p>
-    
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %}
-          <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
-          <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
-          <button id="upload-button" type="submit">Tải lên</button>
-          <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
-        </form>
-    
-        </br>
-        <hr style="border-top: 1px solid #FFFF;"> </br>
+      <div class="content">
+        <div class="form-container">
+          <h1>Tải file Excel lên tại đây</h1>
+          <p>Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân tích giúp bạn</p>
+      
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+            <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
+            <button id="upload-button" type="submit">Tải lên</button>
+            <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
+          </form>
 
-        
-       
-        
-      </div>
+          {% if data_preview %}
+            <h3>Preview Dữ Liệu</h3>
+            <div class="table-responsive">
+                {{ data_preview|safe }}
+            </div>
+          {% endif %}
+
+      
+          </br>
+          <hr style="border-top: 1px solid #FFFF;"> </br>
+  
+  
+        </div>
+      
     
  
-      <hr>
-    {% if file_path %}
-      <div class="result">
-        <h2>Kết quả tính toán</h2>
-        <!-- Hiển thị tập rút gọn -->
-        {% if reducts %}
-            <p><strong>Các tập rút gọn tìm được:</strong></p>
-            <ul>
-                {% for reduct in reducts %}
-                    <li>{{ reduct|join:", " }}</li>
-                {% endfor %}
-            </ul>
-
-            <p><strong>3 luật phân lớp chính xác 100%:</strong></p>
-            <ul>
-                {% if classification_rules %}
-                    {% for rule in classification_rules %}
-                        <li>{{ rule }}</li>
+        <hr>
+        {% if file_path %}
+          <div class="result-container">
+            <h2>Kết quả tính toán</h2>
+            <!-- Hiển thị tập rút gọn -->
+            {% if reducts %}
+                <p><strong>Các tập rút gọn tìm được:</strong></p>
+                <ul>
+                    {% for reduct in reducts %}
+                        <li>{{ reduct|join:", " }}</li>
                     {% endfor %}
-                {% else %}
-                    <li>Không tìm thấy luật phân lớp.</li>
-                {% endif %}
-            </ul>
-        {% elif error %}
-        <p style="color: red;">{{ error }}</p>
+                </ul>
+
+                <p><strong>3 luật phân lớp chính xác 100%:</strong></p>
+                <ul>
+                    {% if classification_rules %}
+                        {% for rule in classification_rules %}
+                            <li>{{ rule }}</li>
+                        {% endfor %}
+                    {% else %}
+                        <li>Không tìm thấy luật phân lớp.</li>
+                    {% endif %}
+                </ul>
+            {% elif error %}
+            <p style="color: red;">{{ error }}</p>
+            {% endif %}
         {% endif %}
-    {% endif %}
+
+      </div>
     </div>
     
 

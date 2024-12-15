@@ -67,16 +67,27 @@
       }
 
       .sub-menu {
-        display: none;
-        padding-left: 20px;
+      display: none; /* Ẩn submenu ban đầu */
+      margin-left: 20px; /* Thụt lề so với menu chính */
       }
 
-      .sub-menu li {
-        margin: 10px 0;
+    .sub-menu li a {
+      background-color: transparent; /* Xóa màu nền mặc định */
+      color: #fff; /* Màu chữ */
+      display: block; /* Hiển thị dạng block */
+      padding: 5px 15px;
+      padding-left: 20px; /* Thụt thêm lề cho mục con */
+      text-decoration: none;
       }
 
-      .sub-menu li a {
-        background-color: #3b82f6;
+      .sub-menu li a:hover {
+        background-color: #007bff; /* Màu xanh dương khi hover */
+        color: #fff; /* Màu chữ vẫn trắng khi hover */
+        border-radius: 5px; /* Thêm góc bo tròn */
+      }
+
+      .sidebar ul li.active > .sub-menu {
+        display: block;
       }
 
       .main-content {
@@ -133,88 +144,32 @@
             <span>Trang chủ</span>
           </a>
         </li>
-
-        <!-- Các thuật toán không nhóm -->
+    
+        <!-- Tiền xử lý dữ liệu -->
+        <li>
+          <a href="{% url 'HSTuongQuan' %}">
+            <i class="fas fa-chart-line"></i>
+            Tiền xử lý dữ liệu
+          </a>
+        </li>
+    
+        <!-- Tập phổ biến -->
         <li>
           <a href="{% url 'TapPhoBien' %}">
             <i class="fas fa-layer-group"></i>
             Tập phổ biến và Luật kết hợp
           </a>
         </li>
+    
+        <!-- Phân lớp -->
         <li>
-          <a href="{% url 'HSTuongQuan' %}" id="popular-link">
-            <i class="fas fa-chart-line"></i>
-            Mức độ tương quan
-          </a>
-        </li>
-
-        <!-- Nhóm Cây quyết định -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('decisionTree')">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="20px"
-              width="20px"
-              viewBox="0 -960 960 960"
-              fill="#ffffff"
-            >
-              <path
-                d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z"
-              />
+          <a href="#" id="popular-link" onclick="toggleSubMenu('classification')">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
+              <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
             </svg>
-            <span>Cây quyết định</span>
+            <span>Phân lớp</span>
           </a>
-          <ul class="sub-menu" id="decisionTree">
-            <li>
-              <a href="{% url 'gain' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gain
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'gini' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Gini
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Xấp xỉ -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('approximation')">
-            <i class="fas fa-stream"></i>
-            Xấp xỉ
-          </a>
-          <ul class="sub-menu" id="approximation">
-            <li>
-              <a href="{% url 'approximation' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính xấp xỉ
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'dependency' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Khảo sát phụ thuộc
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'reduct' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính reducts
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        <!-- Nhóm Gom cụm -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('clustering')">
-            <i class="fas fa-object-group"></i>
-            Gom cụm
-          </a>
-          <ul class="sub-menu" id="clustering">
+          <ul class="sub-menu" id="classification">
             <li>
               <a href="{% url 'bayes' %}">
                 <i class="fas fa-arrow-circle-right"></i>
@@ -228,6 +183,64 @@
               </a>
             </li>
             <li>
+              <a href="#" onclick="toggleSubMenu('decisionTree')">
+                <i class="fas fa-arrow-circle-right"></i>
+                Cây quyết định
+              </a>
+              <ul class="sub-menu" id="decisionTree">
+                <li>
+                  <a href="{% url 'gain' %}">
+                    <i class="fas fa-sitemap"></i>
+                    Gain
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'gini' %}">
+                    <i class="fas fa-tree"></i>
+                    Gini
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Tập thô -->
+        <li>
+          <a href="#" id="popular-link" onclick="toggleSubMenu('reducts')">
+            <i class="fas fa-stream"></i>
+            Tập thô
+          </a>
+          <ul class="sub-menu" id="reducts">
+            <li>
+              <a href="{% url 'dependency' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Khảo sát sự phụ thuộc
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'approximation' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính xấp xỉ
+              </a>
+            </li>
+            <li>
+              <a href="{% url 'reduct' %}">
+                <i class="fas fa-arrow-circle-right"></i>
+                Tính các tập thô
+              </a>
+            </li>
+          </ul>
+        </li>
+    
+        <!-- Gom cụm -->
+        <li>
+          <a href="#" id="popular-link" onclick="toggleSubMenu('clustering')">
+            <i class="fas fa-object-group"></i>
+            Gom cụm
+          </a>
+          <ul class="sub-menu" id="clustering">
+            <li>
               <a href="{% url 'kmeans' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 K-Means
@@ -236,13 +249,13 @@
             <li>
               <a href="kohonen.html">
                 <i class="fas fa-arrow-circle-right"></i>
-                Kohonen
+                Mạng Kohonen
               </a>
             </li>
           </ul>
         </li>
       </ul>
-    </div>
+    </div>    
 
     <div class="main-content">
       <div class="content-header">

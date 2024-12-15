@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decision Tree Analysis</title>
+    <title>Information Gain Analysis</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
     <style>
         .container { margin-top: 20px; }
@@ -14,8 +14,8 @@
 </head>
 <body>
     <div class="container">
-        <h1 class="text-center">Decision Tree Analysis</h1>
-
+        <h1 class="text-center">Information Gain Analysis</h1>
+        {% load static %}
         {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
         {% endif %}
@@ -46,37 +46,26 @@
         {% endif %}
 
         {% if calculations %}
-            <h3 class="mt-4">Entropy and Information Gain Calculations</h3>
+            <h3 class="mt-4">Information Gain Calculations</h3>
             <pre>
-                {% for calc in calculations %}
-                    {{ calc }}
-                {% endfor %}
+                {{ calculations }}
             </pre>
         {% endif %}
 
-        {% if tree_rules %}
-            <h3 class="mt-4">Decision Tree Rules</h3>
-            <pre>{{ tree_rules }}</pre>
-        {% endif %}
 
-        {% if if_then_rules %}
-            <h3 class="mt-4">Generated IF-THEN Rules</h3>
-            <ul>
-                {% for rule in if_then_rules %}
-                    <li>{{ rule }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-
+<!-- Display IF-THEN rules -->
+{% if if_then_rules %}
+<h3>IF-THEN Rules:</h3>
+<ul>
+    {% for rule in if_then_rules %}
+        <li>{{ rule }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
         {% if image_path %}
-            <h3 class="mt-4">Decision Tree Visualization</h3>
-            <img src="{{ image_path }}" alt="Decision Tree">
-        {% endif %}
-
-        {% if results %}
-            <h3 class="mt-4">Model Accuracy</h3>
-            <p>{{ results }}</p>
-        {% endif %}
+    <h3 class="mt-4">Decision Tree Visualization</h3>
+    <img src="{% static image_path %}" alt="Decision Tree Visualization">
+{% endif %}
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
 </body>

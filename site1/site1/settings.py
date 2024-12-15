@@ -120,7 +120,14 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # Thư mục chứa các tệp tĩnh của bạn
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')   # Thư mục thu thập tệp tĩnh (sử dụng khi deploy)
 
+STATIC_URL = '/static/'
 
+# If you're in development mode, you can use this to serve static files:
+# This is usually added when `DEBUG = True`
+import os
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
