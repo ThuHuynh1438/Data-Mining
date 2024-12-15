@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Suất Naive Bayes (Làm Trơn Laplace)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            font-weight: bold;
+        }
+        select, input, button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function showValues(column) {
+            const valueDiv = document.getElementById(`values-${column}`);
+            if (document.getElementById(`feature-${column}`).checked) {
+                valueDiv.classList.remove('hidden');
+            } else {
+                valueDiv.classList.add('hidden');
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Xác Suất Naive Bayes (Làm Trơn Laplace)</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="file">Chọn file (CSV/Excel):</label>
+        <input type="file" id="file" name="file">
+        <button type="submit">Tải lên</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if data_uploaded %}
+        <form method="POST">
+            {% csrf_token %}
+            <label for="target-column">Chọn cột quyết định:</label>
+            <select id="target-column" name="target_column" required>
+                {% for column in columns %}
+                    <option value="{{ column }}">{{ column }}</option>
+                {% endfor %}
+            </select>
+
+            <label>Chọn các cột tham gia:</label>
+            {% for column, values in unique_values %}
+                <div>
+                    <input type="checkbox" name="feature_columns" value="{{ column }}" id="feature-{{ column }}" onclick="showValues('{{ column }}')">
+                    <label for="feature-{{ column }}">{{ column }}</label>
+                </div>
+
+                <div id="values-{{ column }}" class="hidden" style="margin-left: 20px;">
+                    <label for="value-{{ column }}">Chọn giá trị cho {{ column }}:</label>
+                    <select name="{{ column }}" id="value-{{ column }}">
+                        {% for value in values %}
+                            <option value="{{ value }}">{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+
+            <button type="submit" name="calculate">Tính xác suất</button>
+        </form>
+    {% endif %}
+
+    {% if success %}
+        <div class="result">
+            <h2>Kết quả:</h2>
+            <p><strong>Kết quả Dự Đoán:</strong> {{ result }}</p>
+            <p><strong>Xác Suất Các Lớp (P(C)):</strong></p>
+            <ul>
+                {% for cls, prob in prob_classes.items %}
+                    <li>{{ cls }} = {{ prob }}</li>
+                {% endfor %}
+            </ul>
+
+            <h3>Xác Suất Từng Giá Trị (P(X|C)):</h3>
+            {% for cls, probs in prob_values_given_class.items %}
+                <h4>Lớp {{ cls }}:</h4>
+                <ul>
+                    {% for col, prob in probs.items %}
+                        <li>{{ col }} = {{ prob }}</li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+
+            <h3>Tổng Xác Suất (P(X|C)*P(C)):</h3>
+            <ul>
+                {% for cls, product in class_products.items %}
+                    <li>{{ cls }} = {{ product }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</body>
+</html>
