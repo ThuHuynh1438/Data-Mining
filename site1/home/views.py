@@ -1,3 +1,4 @@
+import base64
 from django.shortcuts import redirect, render
 from django.http import HttpResponse, JsonResponse
 import pandas as pd
@@ -736,144 +737,392 @@ def kmeans(points, centroids, k, max_iters=100):
 
     return centroids, clusters
 
-def kmeans_clustering(request):
-    if request.method == 'POST' and request.FILES.get('file') and request.POST.get('k'):
-        try:
-            # Đọc file được tải lên
-            file = request.FILES['file']
-            file_extension = os.path.splitext(file.name)[1]
-            if file_extension == '.csv':
-                data = pd.read_csv(file)
-            elif file_extension in ['.xls', '.xlsx']:
-                data = pd.read_excel(file)
+# Thuật toán K-means
+def kmeans(points, centroids, k, max_iters=100):
+    for _ in range(max_iters):
+        clusters = [[] for _ in range(k)]
+        for point in points:
+            distances = [euclidean_distance(point, centroid) for centroid in centroids]
+            closest_centroid = np.argmin(distances)
+            clusters[closest_centroid].append(point)
+
+        new_centroids = []
+        for cluster in clusters:
+            if cluster:
+                new_centroid = np.mean(cluster, axis=0)
+                new_centroids.append(new_centroid)
             else:
-                return render(request, 'kmeans.html', {'error': 'Vui lòng tải lên file định dạng CSV hoặc Excel!'})
+                new_centroids.append(centroids[len(new_centroids)])
 
-            # Kiểm tra nếu dữ liệu không có cột số
-            numerical_data = data.select_dtypes(include=[np.number])
-            if numerical_data.empty:
-                return render(request, 'kmeans.html', {'error': 'Dataset không có cột số nào để phân cụm.'})
+        if np.allclose(new_centroids, centroids):
+            break
 
-            # Chuyển dữ liệu thành numpy array
-            points = numerical_data.to_numpy()
+        centroids = new_centroids
 
-            # Lấy số cụm từ form
-            try:
-                k = int(request.POST.get('k'))
-                if k <= 0:
-                    raise ValueError("Số cụm phải là số nguyên dương")
-            except ValueError:
-                return render(request, 'kmeans.html', {'error': 'Vui lòng nhập số nguyên dương cho số cụm (k).'})
+    return centroids, clusters
 
-            # Chọn k điểm đầu tiên làm centroids ban đầu
-            centroids = points[:k]
+def kmeans_view(request):
+    context = {}
 
-            # Chạy K-means
-            final_centroids, final_clusters = kmeans(points, centroids, k)
-
-            # Vẽ biểu đồ các cụm
-            colors = ['blue', 'orange', 'green', 'red', 'purple']
-            plt.figure(figsize=(8, 6))
-
-            for i, cluster in enumerate(final_clusters):
-                cluster = np.array(cluster)
-                for point in cluster:
-                    # Sử dụng np.array_equal để so sánh điểm
-                    if not any(np.array_equal(point, c) for c in cluster):
-                        continue
-                    plt.scatter(point[0], point[1], label=f'Cluster {i+1}', color=colors[i])
-
-            # Lưu ảnh biểu đồ
-            image_path = 'static/kmeans_clusters.png'
-            plt.title('K-means Clustering')
-            plt.xlabel('X1')
-            plt.ylabel('X2')
-            plt.legend()
-            plt.savefig(image_path)
-            plt.close()
-
-            # Thêm nhãn cụm vào DataFrame ban đầu
-            cluster_labels = []
-            for point in points:
-                for i, cluster in enumerate(final_clusters):
-                    if any(np.array_equal(point, c) for c in cluster):
-                        cluster_labels.append(i + 1)
-                        break
-
-            # Gắn nhãn vào dữ liệu gốc
-            data['Cluster'] = cluster_labels
-
-            # Xuất kết quả ra file Excel
-            output_file = 'static/kmeans_results.xlsx'
-            data.to_excel(output_file, index=False)
-
-            # Truyền dữ liệu tới template
-            context = {
-                'results': 'K-means clustering đã hoàn thành.',
-                'image_path': f'/{image_path}',
-                'output_file': f'/{output_file}',
-            }
-
-            return render(request, 'kmeans.html', context)
-
-        except Exception as e:
-            return render(request, 'kmeans.html', {'error': f'Lỗi xử lý file: {str(e)}'})
-
-    return render(request, 'kmeans.html')
-
-def naive_bayes_prediction(request):
     if request.method == 'POST':
-        message = ""
-        error = None
-        result_class = None
+        if 'file' in request.FILES:
+            try:
+                file = request.FILES['file']
+                df = pd.read_excel(file)
+                df = df.dropna()  # Remove null values
+                request.session['df'] = df.to_dict()
+                context['columns'] = df.columns.tolist()
+                context['file_uploaded'] = True
+            except Exception as e:
+                context['error'] = f"Lỗi khi đọc tệp: {str(e)}"
 
-        try:
-            # Lấy tệp Excel từ form
-            excel_file = request.FILES['excel_file']
-            df = pd.read_excel(excel_file)
+        elif request.POST.getlist('attributes'):
+            try:
+                df = pd.DataFrame(request.session['df'])
+                selected_attributes = request.POST.getlist('attributes')
+                if not selected_attributes:
+                    context['error'] = "Vui lòng chọn các thuộc tính để phân cụm."
+                    context['columns'] = df.columns.tolist()
+                    return render(request, 'kmeans.html', context)
 
-            # Chuẩn hóa các tên cột và thuộc tính nhập vào (chuyển thành chữ thường và loại bỏ khoảng trắng)
-            df.columns = df.columns.str.strip().str.lower()  # Chuẩn hóa tên cột
-            attributes_set = request.POST.get('attributes_set').split(',')
-            attributes_set = [attribute.strip().lower() for attribute in attributes_set]  # Chuẩn hóa thuộc tính nhập vào
+                data = df[selected_attributes].copy()
+                for col in selected_attributes:
+                    if data[col].dtype == 'object':
+                        le = LabelEncoder()
+                        data[col] = le.fit_transform(data[col].astype(str))
 
-            # Kiểm tra xem tất cả các thuộc tính có tồn tại trong bảng dữ liệu không
-            if not all(attribute in df.columns for attribute in attributes_set):
-                error = f"Các thuộc tính không tồn tại trong file Excel. Các cột có sẵn là: {', '.join(df.columns)}"
-                return render(request, 'bayes.html', {'error': error})
+                scaler = StandardScaler()
+                data_scaled = scaler.fit_transform(data)
 
-            # Chọn tập thuộc tính và tập nhãn
-            X = df[attributes_set]
-            y = df['play']  # 'play' là cột nhãn trong dữ liệu
+                distortions = []
+                K = range(1, 11)
+                for k in K:
+                    kmeans = KMeans(n_clusters=k, random_state=42)
+                    kmeans.fit(data_scaled)
+                    distortions.append(kmeans.inertia_)
 
-            # Áp dụng Label Encoding để chuyển các giá trị chuỗi thành số
-            le = LabelEncoder()
-            for column in X.columns:
-                X[column] = le.fit_transform(X[column])  # Chuyển các giá trị chuỗi thành số
+                plt.figure(figsize=(8, 6))
+                plt.plot(K, distortions, 'bx-')
+                plt.xlabel('Số cụm (k)')
+                plt.ylabel('Độ méo (Inertia)')
+                plt.title('Phương pháp Elbow')
+                elbow_buffer = io.BytesIO()
+                plt.savefig(elbow_buffer, format='png')
+                elbow_buffer.seek(0)
+                elbow_uri = base64.b64encode(elbow_buffer.read()).decode('utf-8')
+                plt.close()
 
-            # Chuyển cột nhãn 'play' thành số
-            y = le.fit_transform(y)
+                knee_locator = knee_locator(K, distortions, curve='convex', direction='decreasing')
+                optimal_k = knee_locator.knee
 
-            # Chia dữ liệu thành tập huấn luyện và kiểm tra
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+                kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+                clusters = kmeans.fit_predict(data_scaled)
 
-            # Áp dụng thuật toán Naive Bayes
-            model = GaussianNB()
-            model.fit(X_train, y_train)
+                df['Cluster'] = clusters
 
-            # Dự đoán trên tập kiểm tra
-            y_pred = model.predict(X_test)
+                plt.figure(figsize=(8, 6))
+                plt.scatter(data_scaled[:, 0], data_scaled[:, 1], c=clusters, cmap='viridis')
+                plt.title('Phân Cụm KMeans')
+                plt.xlabel(selected_attributes[0])
+                plt.ylabel(selected_attributes[1])
+                cluster_buffer = io.BytesIO()
+                plt.savefig(cluster_buffer, format='png')
+                cluster_buffer.seek(0)
+                cluster_uri = base64.b64encode(cluster_buffer.read()).decode('utf-8')
+                plt.close()
 
-            # Đánh giá mô hình
-            accuracy = accuracy_score(y_test, y_pred)
+                cluster_details = {}
+                for cluster in np.unique(clusters):
+                    cluster_data = df[df['Cluster'] == cluster][selected_attributes].to_dict('records')
+                    cluster_details[f'Cụm {cluster + 1}'] = cluster_data
 
-            # Gửi kết quả về giao diện người dùng
-            result_class = f"Kết quả dự đoán: Độ chính xác của mô hình là {accuracy * 100:.2f}%."
-            message = "Dự đoán thành công!"
+                silhouette_avg = metrics.silhouette_score(data_scaled, clusters)
 
-        except Exception as e:
-            error = f"Đã có lỗi xảy ra: {str(e)}"
-        
-        return render(request, 'bayes.html', {'message': message, 'error': error, 'result_class': result_class})
-    
-    return render(request, 'bayes.html')
+                context.update({
+                    'success': True,
+                    'optimal_k': optimal_k,
+                    'silhouette_score': round(silhouette_avg, 4),
+                    'elbow_uri': elbow_uri,
+                    'cluster_uri': cluster_uri,
+                    'cluster_details': cluster_details,
+                })
+            except Exception as e:
+                context['error'] = f"Lỗi khi chạy KMeans: {str(e)}"
+
+    return render(request, 'kmeans.html', context)
+
+def bayes_view(request):
+    context = {}
+
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            try:
+                file = request.FILES['file']
+                if file.name.endswith('.csv'):
+                    df = pd.read_csv(file)
+                elif file.name.endswith(('.xls', '.xlsx')):
+                    df = pd.read_excel(file)
+                else:
+                    context['error'] = "Chỉ hỗ trợ file CSV hoặc Excel."
+                    return render(request, 'bayes.html', context)
+
+                # Loại bỏ giá trị thiếu
+                df = df.dropna()
+
+                # Lưu dữ liệu vào session
+                request.session['data'] = df.to_dict()
+                # Chuẩn bị danh sách cột và giá trị duy nhất cho từng cột
+                unique_values = [(col, df[col].dropna().unique().tolist()) for col in df.columns]
+                context['columns'] = df.columns.tolist()
+                context['unique_values'] = unique_values
+                context['data_uploaded'] = True
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi xử lý file: {e}"
+
+        elif 'calculate' in request.POST:
+            try:
+                df = pd.DataFrame(request.session['data'])
+
+                target_column = request.POST.get('target_column')
+                feature_columns = request.POST.getlist('feature_columns')
+                selected_values = {col: request.POST.get(col) for col in feature_columns}
+
+                if not target_column or not feature_columns:
+                    context['error'] = "Vui lòng chọn cột quyết định và các cột tham gia."
+                    unique_values = [(col, df[col].dropna().unique().tolist()) for col in df.columns]
+                    context['columns'] = df.columns.tolist()
+                    context['unique_values'] = unique_values
+                    return render(request, 'bayes.html', context)
+
+                total_samples = len(df)
+                yes_count = len(df[df[target_column] == 'Yes'])
+                no_count = len(df[df[target_column] == 'No'])
+
+                prob_yes = yes_count / total_samples
+                prob_no = no_count / total_samples
+
+                prob_values_given_yes = {}
+                prob_values_given_no = {}
+
+                for col in feature_columns:
+                    value = selected_values[col]
+
+                    yes_value_count = len(df[(df[col] == value) & (df[target_column] == 'Yes')])
+                    no_value_count = len(df[(df[col] == value) & (df[target_column] == 'No')])
+
+                    prob_value_given_yes = yes_value_count / yes_count if yes_count > 0 else 0
+                    prob_value_given_no = no_value_count / no_count if no_count > 0 else 0
+
+                    prob_values_given_yes[col] = round(prob_value_given_yes, 4)
+                    prob_values_given_no[col] = round(prob_value_given_no, 4)
+
+                yes_product = prob_yes
+                no_product = prob_no
+
+                for col in feature_columns:
+                    yes_product *= prob_values_given_yes[col]
+                    no_product *= prob_values_given_no[col]
+
+                result = "Yes" if yes_product > no_product else "No"
+
+                context['success'] = True
+                context['result'] = result
+                context['prob_yes'] = round(yes_product, 4)
+                context['prob_no'] = round(no_product, 4)
+                context['prob_values_given_yes'] = prob_values_given_yes
+                context['prob_values_given_no'] = prob_values_given_no
+                context['initial_prob_yes'] = round(prob_yes, 4)
+                context['initial_prob_no'] = round(prob_no, 4)
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi tính toán: {e}"
+
+    return render(request, 'bayes.html', context)
+
+def laplace_view(request):
+    context = {}
+
+    if request.method == 'POST':
+        if 'file' in request.FILES:
+            try:
+                file = request.FILES['file']
+                if file.name.endswith('.csv'):
+                    df = pd.read_csv(file)
+                elif file.name.endswith(('.xls', '.xlsx')):
+                    df = pd.read_excel(file)
+                else:
+                    context['error'] = "Chỉ hỗ trợ file CSV hoặc Excel."
+                    return render(request, 'laplace.html', context)
+
+                # Loại bỏ giá trị thiếu
+                df = df.dropna()
+
+                # Lưu dữ liệu vào session
+                request.session['data'] = df.to_dict()
+                # Chuẩn bị danh sách cột và giá trị duy nhất cho từng cột
+                unique_values = [(col, df[col].dropna().unique().tolist()) for col in df.columns]
+                context['columns'] = df.columns.tolist()
+                context['unique_values'] = unique_values
+                context['data_uploaded'] = True
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi xử lý file: {e}"
+
+        elif 'calculate' in request.POST:
+            try:
+                df = pd.DataFrame(request.session['data'])
+
+                target_column = request.POST.get('target_column')
+                feature_columns = request.POST.getlist('feature_columns')
+                selected_values = {col: request.POST.get(col) for col in feature_columns}
+
+                if not target_column or not feature_columns:
+                    context['error'] = "Vui lòng chọn cột quyết định và các cột tham gia."
+                    unique_values = [(col, df[col].dropna().unique().tolist()) for col in df.columns]
+                    context['columns'] = df.columns.tolist()
+                    context['unique_values'] = unique_values
+                    return render(request, 'laplace.html', context)
+
+                total_samples = len(df)
+                class_counts = df[target_column].value_counts()
+                classes = class_counts.index.tolist()
+
+                # Tính xác suất ban đầu P(C) với làm trơn Laplace
+                prob_classes = {
+                    cls: (class_counts[cls] + 1) / (total_samples + len(classes))
+                    for cls in classes
+                }
+
+                prob_values_given_class = {cls: {} for cls in classes}
+                class_products = {cls: prob_classes[cls] for cls in classes}
+
+                for col in feature_columns:
+                    value = selected_values[col]
+                    unique_values = df[col].nunique()
+
+                    for cls in classes:
+                        value_count = len(df[(df[col] == value) & (df[target_column] == cls)])
+
+                        # Tính xác suất có làm trơn Laplace
+                        prob_value_given_class = (value_count + 1) / (class_counts[cls] + unique_values)
+                        prob_values_given_class[cls][col] = round(prob_value_given_class, 4)
+
+                        # Nhân xác suất
+                        class_products[cls] *= prob_value_given_class
+
+                # Kết quả dự đoán
+                result = max(class_products, key=class_products.get)
+
+                # Gửi dữ liệu ra giao diện
+                context['success'] = True
+                context['result'] = result
+                context['prob_classes'] = {cls: round(prob, 4) for cls, prob in prob_classes.items()}
+                context['class_products'] = {cls: round(product, 4) for cls, product in class_products.items()}
+                context['prob_values_given_class'] = prob_values_given_class
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi tính toán: {e}"
+
+    return render(request, 'laplace.html', context)
+
+def kohonen_view(request):
+    context = {}
+
+    if request.method == 'POST':
+        if request.FILES.get('file'):
+            try:
+                # Đọc tệp Excel
+                file = request.FILES['file']
+                df = pd.read_excel(file)
+
+                # Lưu dữ liệu vào session
+                request.session['df'] = df.to_dict()
+                context['columns'] = df.columns.tolist()
+                context['file_uploaded'] = True
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi đọc tệp: {str(e)}"
+
+        elif request.POST.getlist('attributes'):
+            try:
+                # Lấy dữ liệu từ session
+                df = pd.DataFrame(request.session['df'])
+
+                # Lấy các thuộc tính được chọn
+                selected_attributes = request.POST.getlist('attributes')
+                if not selected_attributes:
+                    context['error'] = "Vui lòng chọn các thuộc tính để phân cụm."
+                    context['columns'] = df.columns.tolist()
+                    return render(request, 'kohonen.html', context)
+
+                # Tiền xử lý dữ liệu
+                data = df[selected_attributes].copy()
+                for col in selected_attributes:
+                    if data[col].dtype == 'object':
+                        le = LabelEncoder()
+                        data[col] = le.fit_transform(data[col].astype(str))
+
+                scaler = StandardScaler()
+                data_scaled = scaler.fit_transform(data)
+
+                # Khởi tạo lưới Kohonen
+                grid_shape = (5, 5)
+                learning_rate = 0.5
+                radius = 1.0
+                epochs = 100
+                grid = np.random.rand(grid_shape[0], grid_shape[1], data_scaled.shape[1])
+
+                # Huấn luyện Kohonen
+                for epoch in range(epochs):
+                    for sample in data_scaled:
+                        # Tìm neuron chiến thắng
+                        distances = np.linalg.norm(grid - sample, axis=2)
+                        bmu_idx = np.unravel_index(np.argmin(distances), distances.shape)
+
+                        # Cập nhật trọng số
+                        for i in range(grid.shape[0]):
+                            for j in range(grid.shape[1]):
+                                dist_to_bmu = np.sqrt((i - bmu_idx[0]) ** 2 + (j - bmu_idx[1]) ** 2)
+                                if dist_to_bmu <= radius:
+                                    influence = np.exp(-dist_to_bmu / (2 * (radius ** 2)))
+                                    grid[i, j] += learning_rate * influence * (sample - grid[i, j])
+
+                # Dự đoán cụm
+                predictions = []
+                for sample in data_scaled:
+                    distances = np.linalg.norm(grid - sample, axis=2)
+                    bmu_idx = np.unravel_index(np.argmin(distances), distances.shape)
+                    predictions.append(bmu_idx)
+
+                # Thêm kết quả phân cụm vào DataFrame
+                df['Cluster'] = [f"({p[0]}, {p[1]})" for p in predictions]
+
+                # Trực quan hóa kết quả phân cụm
+                plt.figure(figsize=(8, 6))
+                plt.scatter(data_scaled[:, 0], data_scaled[:, 1], c=[p[0] * grid_shape[1] + p[1] for p in predictions], cmap='viridis')
+                plt.title('Phân Cụm Kohonen')
+                plt.xlabel(selected_attributes[0])
+                plt.ylabel(selected_attributes[1])
+                buffer = io.BytesIO()
+                plt.savefig(buffer, format='png')
+                buffer.seek(0)
+                img_uri = base64.b64encode(buffer.read()).decode('utf-8')
+                plt.close()
+
+                # Chi tiết cụm
+                cluster_details = {}
+                for cluster in df['Cluster'].unique():
+                    cluster_details[cluster] = df[df['Cluster'] == cluster][selected_attributes].to_dict('records')
+
+                # Trả kết quả ra giao diện
+                context.update({
+                    'success': True,
+                    'img_uri': img_uri,
+                    'cluster_details': cluster_details
+                })
+
+            except Exception as e:
+                context['error'] = f"Lỗi khi chạy Kohonen: {str(e)}"
+
+    return render(request, 'kohonen.html', context)
