@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xác Suất Naive Bayes</title>
+    <title>Xác Suất Naive Bayes (Làm Trơn Laplace)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -55,7 +55,7 @@
     </script>
 </head>
 <body>
-    <h1>Xác Suất Naive Bayes</h1>
+    <h1>Xác Suất Naive Bayes (Làm Trơn Laplace)</h1>
 
     <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
@@ -103,28 +103,29 @@
         <div class="result">
             <h2>Kết quả:</h2>
             <p><strong>Kết quả Dự Đoán:</strong> {{ result }}</p>
-            <p><strong>Xác Suất Ban Đầu:</strong></p>
-            <p>- P(Yes): {{ initial_prob_yes }}</p>
-            <p>- P(No): {{ initial_prob_no }}</p>
-        
-            <h3>Xác Suất Từng Giá Trị (Dựa Trên Giá Trị Nhập Vào):</h3>
-            <h4>Xác Suất Theo Yes:</h4>
+            <p><strong>Xác Suất Các Lớp (P(C)):</strong></p>
             <ul>
-                {% for col, prob in prob_values_given_yes.items %}
-                    <li>{{ col }} = {{ prob }}</li>
+                {% for cls, prob in prob_classes.items %}
+                    <li>{{ cls }} = {{ prob }}</li>
                 {% endfor %}
             </ul>
-        
-            <h4>Xác Suất Theo No:</h4>
+
+            <h3>Xác Suất Từng Giá Trị (P(X|C)):</h3>
+            {% for cls, probs in prob_values_given_class.items %}
+                <h4>Lớp {{ cls }}:</h4>
+                <ul>
+                    {% for col, prob in probs.items %}
+                        <li>{{ col }} = {{ prob }}</li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+
+            <h3>Tổng Xác Suất (P(X|C)*P(C)):</h3>
             <ul>
-                {% for col, prob in prob_values_given_no.items %}
-                    <li>{{ col }} = {{ prob }}</li>
+                {% for cls, product in class_products.items %}
+                    <li>{{ cls }} = {{ product }}</li>
                 {% endfor %}
             </ul>
-        
-            <h3>Tổng Xác Suất:</h3>
-            <p>- P(Yes|X): {{ prob_yes }}</p>
-            <p>- P(No|X): {{ prob_no }}</p>
         </div>
     {% endif %}
 </body>

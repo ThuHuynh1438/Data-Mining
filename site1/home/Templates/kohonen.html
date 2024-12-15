@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phân Cụm Kohonen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input, select, button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        .cluster-table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .cluster-table th, .cluster-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .cluster-table th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Phân Cụm Kohonen</h1>
+
+    <!-- Form tải lên tệp -->
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="file">Chọn file dữ liệu (CSV/Excel):</label>
+        <input type="file" id="file" name="file" required>
+        <button type="submit">Tải lên</button>
+    </form>
+
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    {% if file_uploaded %}
+        <!-- Form chọn thuộc tính -->
+        <form method="POST">
+            {% csrf_token %}
+            <label>Chọn các thuộc tính để phân cụm:</label>
+            {% for column in columns %}
+                <div>
+                    <input type="checkbox" name="attributes" value="{{ column }}" id="attribute-{{ column }}">
+                    <label for="attribute-{{ column }}">{{ column }}</label>
+                </div>
+            {% endfor %}
+            <button type="submit">Chạy Kohonen</button>
+        </form>
+    {% endif %}
+
+    {% if success %}
+        <!-- Kết quả phân cụm -->
+        <div class="result">
+            <h2>Kết quả phân cụm Kohonen</h2>
+            <h3>Biểu đồ phân cụm:</h3>
+            <img src="data:image/png;base64,{{ img_uri }}" alt="Biểu đồ Kohonen" style="width: 100%; max-width: 600px;">
+
+            <h3>Chi tiết cụm:</h3>
+            <table class="cluster-table">
+                <thead>
+                    <tr>
+                        <th>Cụm</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cluster, details in cluster_details.items %}
+                        <tr>
+                            <td>{{ cluster }}</td>
+                            <td>
+                                <ul>
+                                    {% for detail in details %}
+                                        <li>{{ detail }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</body>
+</html>

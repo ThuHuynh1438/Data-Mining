@@ -3,78 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-means Clustering</title>
+    <title>KMeans Clustering</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
         }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        label {
+            font-weight: bold;
         }
-        h1 {
-            text-align: center;
-            color: #333;
+        select, input, button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result img {
+            max-width: 100%;
+            height: auto;
         }
         .error {
             color: red;
         }
-        .results {
-            margin-top: 20px;
-            color: green;
+        table {
+            border-collapse: collapse;
+            width: 100%;
         }
-        .image-container {
-            text-align: center;
-            margin-top: 20px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
         }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-        input[type="file"], input[type="number"] {
-            margin-bottom: 20px;
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h1>K-means Clustering</h1>
-
-    <!-- Form tải file và nhập số cụm -->
-    <form method="post" enctype="multipart/form-data">
+    <h1>KMeans Clustering</h1>
+    <form method="POST" enctype="multipart/form-data">
         {% csrf_token %}
-        <label for="file">Chọn file dữ liệu (CSV hoặc Excel):</label>
-        <input type="file" name="file" required><br><br>
-
-        <label for="k">Nhập số cụm (k):</label>
-        <input type="number" name="k" min="1" required><br><br>
-
-        <input type="submit" value="Phân cụm K-means">
+        <label for="file">Chọn file dữ liệu (Excel):</label>
+        <input type="file" id="file" name="file">
+        <button type="submit">Tải lên</button>
     </form>
-
     {% if error %}
         <p class="error">{{ error }}</p>
     {% endif %}
-
-    {% if results %}
-        <p class="results">{{ results }}</p>
+    {% if file_uploaded %}
+        <form method="POST">
+            {% csrf_token %}
+            <h3>Chọn các thuộc tính để phân cụm:</h3>
+            {% for column in columns %}
+                <input type="checkbox" name="attributes" value="{{ column }}" id="attr-{{ column }}">
+                <label for="attr-{{ column }}">{{ column }}</label><br>
+            {% endfor %}
+            <button type="submit">Chạy KMeans</button>
+        </form>
     {% endif %}
-
-    {% if image_path %}
-        <div class="image-container">
-            <h3>Biểu đồ phân cụm:</h3>
-            <img src="{{ image_path }}" alt="K-means Clustering">
+    {% if success %}
+        <div class="result">
+            <h2>Kết quả:</h2>
+            <p><strong>Số cụm tối ưu (k):</strong> {{ optimal_k }}</p>
+            <p><strong>Silhouette Score:</strong> {{ silhouette_score }}</p>
+            <h3>Elbow Method:</h3>
+            <img src="data:image/png;base64,{{ elbow_uri }}" alt="Elbow Chart">
+            <h3>KMeans Clustering:</h3>
+            <img src="data:image/png;base64,{{ cluster_uri }}" alt="Cluster Chart">
+            <h3>Chi tiết từng cụm:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cụm</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cluster, details in cluster_details.items %}
+                    <tr>
+                        <td>{{ cluster }}</td>
+                        <td>
+                            <ul>
+                                {% for detail in details %}
+                                <li>{{ detail }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     {% endif %}
-
-    {% if output_file %}
-        <div class="results">
-            <p>File kết quả đã được tạo và lưu: <a href="{{ output_file }}">Tải về kết quả</a></p>
-        </div>
-    {% endif %}
-</div>
-
 </body>
 </html>
