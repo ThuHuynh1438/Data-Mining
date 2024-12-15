@@ -447,14 +447,47 @@ def reduct(request):
 
     return render(request, 'reduct.html', context)
 
+def calculate_entropy(series):
+    """
+    Tính Entropy cho một cột.
+    """
+    value_counts = series.value_counts(normalize=True)
+    entropy = -sum(value_counts * np.log2(value_counts + 1e-9))  # Tránh log(0)
+    return entropy
+
+def calculate_information_gain(data, feature, target):
+    """
+    Tính độ lợi thông tin cho một đặc trưng.
+    """
+    total_entropy = calculate_entropy(data[target])  # Entropy tổng
+    unique_values = data[feature].unique()
+    weighted_entropy = 0
+
+    calculations = [f"Entropy tổng của '{target}': {total_entropy:.4f}"]
+
+    # Tính Entropy có trọng số
+    for value in unique_values:
+        subset = data[data[feature] == value]
+        prob = len(subset) / len(data)
+        subset_entropy = calculate_entropy(subset[target])
+        weighted_entropy += prob * subset_entropy
+        calculations.append(
+            f"  {feature} = {value}: Xác suất = {prob:.4f}, Entropy = {subset_entropy:.4f}"
+        )
+
+    info_gain = total_entropy - weighted_entropy
+    calculations.append(f"Entropy có trọng số: {weighted_entropy:.4f}")
+    calculations.append(f"Độ lợi thông tin cho '{feature}': {info_gain:.4f}")
+    return info_gain, calculations
+
 def decision_tree_gain(request):
     if request.method == 'POST' and request.FILES.get('file'):
         try:
-            steps = []  # Lưu trữ các bước xử lý
-            calculations = []  # Lưu chi tiết các phép tính
-            if_then_rules = []  # Lưu các luật IF-THEN
+            steps = []
+            calculations = []
+            if_then_rules = []
 
-            # Bước 1: Đọc tệp đã tải lên
+            # Bước 1: Đọc tệp dữ liệu
             file = request.FILES['file']
             file_extension = os.path.splitext(file.name)[1]
             steps.append("Tệp đã được tải lên thành công.")
@@ -468,16 +501,14 @@ def decision_tree_gain(request):
                 return render(request, 'gain.html', {'error': 'Vui lòng tải lên tệp CSV hoặc Excel!', 'steps': steps})
 
             steps.append("Dữ liệu đã được đọc thành công từ tệp.")
-
-            # Hiển thị xem trước dữ liệu
             data_preview = data.head().to_html(classes='table table-striped')
 
-            # Bước 2: Chia dữ liệu thành đặc trưng (X) và mục tiêu (y)
-            X = data.iloc[:, :-1]  # Tất cả các cột trừ cột cuối
-            y = data.iloc[:, -1]  # Cột cuối cùng
+            # Bước 2: Chia dữ liệu thành đặc trưng và mục tiêu
+            X = data.iloc[:, :-1]
+            y = data.iloc[:, -1]
             steps.append("Dữ liệu đã được chia thành đặc trưng (X) và mục tiêu (y).")
 
-            # Bước 3: Mã hóa dữ liệu dạng phân loại
+            # Bước 3: Mã hóa dữ liệu phân loại
             label_encoders = {}
             for column in X.columns:
                 le = LabelEncoder()
@@ -486,105 +517,60 @@ def decision_tree_gain(request):
 
             y_encoder = LabelEncoder()
             y = y_encoder.fit_transform(y)
-            steps.append("Dữ liệu phân loại đã được mã hóa.")
+            steps.append("Dữ liệu đã được mã hóa thành công.")
 
-            # Hàm tính entropy
-            def calculate_entropy(column):
-                counts = column.value_counts(normalize=True)
-                entropy = -sum(counts * np.log2(counts))
-                return entropy
-
-            # Hàm tính độ lợi thông tin
-            def calculate_information_gain(data, feature, target):
-                total_entropy = calculate_entropy(data[target])
-
-                # Entropy có trọng số của các tập con
-                values = data[feature].unique()
-                weighted_entropy = 0
-                calculations.append(f"\nTính độ lợi thông tin cho đặc trưng: {feature}")
-                calculations.append(f"Entropy(S) = -Σ(p * log2(p)) với p là xác suất của các lớp trong mục tiêu")
-                calculations.append(f"Entropy(S) = {total_entropy:.4f}")
-
-                for value in values:
-                    subset = data[data[feature] == value]
-                    prob = len(subset) / len(data)
-                    subset_entropy = calculate_entropy(subset[target])
-                    weighted_entropy += prob * subset_entropy
-                    calculations.append(f"\nTập con {feature}={value}: Kích thước={len(subset)}, Xác suất={prob:.4f}, Entropy={subset_entropy:.4f}")
-
-                info_gain = total_entropy - weighted_entropy
-                calculations.append(f"\nEntropy có trọng số = Σ(prob * Entropy(tập con)) = {weighted_entropy:.4f}")
-                calculations.append(f"\nĐộ lợi thông tin = Entropy(S) - Entropy có trọng số = {info_gain:.4f}")
-                return total_entropy, weighted_entropy, info_gain
-
-            # Bước 4: Tính toán entropy và độ lợi thông tin cho tất cả các đặc trưng
-            data['Target'] = y  # Thêm cột mục tiêu vào DataFrame để tính toán
+            # Bước 4: Tính toán Entropy và Information Gain
+            data_encoded = pd.concat([X, pd.Series(y, name='Target')], axis=1)
             best_feature = None
             best_info_gain = -1
+            all_calculations = []
 
             for feature in X.columns:
-                total_entropy, weighted_entropy, info_gain = calculate_information_gain(data, feature, 'Target')
-                calculations.append(
-                    f"Đặc trưng: {feature} -> Entropy(S) = {total_entropy:.4f}, Entropy có trọng số = {weighted_entropy:.4f}, Độ lợi thông tin = {info_gain:.4f}"
-                )
+                info_gain, calc_log = calculate_information_gain(data_encoded, feature, 'Target')
+                all_calculations.extend(calc_log)
 
                 if info_gain > best_info_gain:
                     best_feature = feature
                     best_info_gain = info_gain
 
-            steps.append(f"Đặc trưng được chọn với độ lợi thông tin cao nhất: {best_feature} (Gain = {best_info_gain:.4f}).")
+            steps.append(f"Đặc trưng được chọn: '{best_feature}' với độ lợi thông tin = {best_info_gain:.4f}.")
 
-            # Bước 5: Huấn luyện cây quyết định bằng ID3
+            # Bước 5: Huấn luyện mô hình cây quyết định
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
             clf_entropy = DecisionTreeClassifier(criterion='entropy', random_state=42)
             clf_entropy.fit(X_train, y_train)
-            steps.append("Mô hình cây quyết định đã được huấn luyện bằng tiêu chí entropy.")
+            steps.append("Mô hình cây quyết định đã được huấn luyện thành công.")
 
             # Bước 6: Dự đoán và tính độ chính xác
             y_pred = clf_entropy.predict(X_test)
             accuracy = metrics.accuracy_score(y_test, y_pred)
-            steps.append(f"Dự đoán đã được thực hiện. Độ chính xác của mô hình: {accuracy:.2f}.")
+            steps.append(f"Độ chính xác của mô hình: {accuracy:.2f}")
 
-            # Bước 7: Xuất cấu trúc cây và tạo các luật IF-THEN
-            tree_rules = export_text(clf_entropy, feature_names=list(X.columns))
-            steps.append("Cấu trúc cây quyết định đã được xuất.")
-
-            # Tạo các luật IF-THEN
+            # Bước 7: Xuất luật IF-THEN
             def generate_rules(tree, feature_names, target_names):
                 tree_ = tree.tree_
                 feature_name = [
                     feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!"
                     for i in tree_.feature
                 ]
-
                 paths = []
-
-                def recurse(node, path, paths):
+                def recurse(node, path):
                     if tree_.feature[node] != _tree.TREE_UNDEFINED:
                         name = feature_name[node]
                         threshold = tree_.threshold[node]
-                        left_path = path + [f"({name} <= {threshold})"]
-                        right_path = path + [f"({name} > {threshold})"]
-                        recurse(tree_.children_left[node], left_path, paths)
-                        recurse(tree_.children_right[node], right_path, paths)
+                        recurse(tree_.children_left[node], path + [f"{name} <= {threshold:.2f}"])
+                        recurse(tree_.children_right[node], path + [f"{name} > {threshold:.2f}"])
                     else:
-                        path_str = " AND ".join(path)
                         class_name = target_names[np.argmax(tree_.value[node])]
-                        paths.append(f"IF {path_str} THEN {class_name}")
-
-                recurse(0, [], paths)
+                        paths.append("IF " + " AND ".join(path) + f" THEN {class_name}")
+                recurse(0, [])
                 return paths
 
             if_then_rules = generate_rules(clf_entropy, list(X.columns), y_encoder.classes_)
 
-            # Bước 8: Vẽ và lưu hình ảnh cây quyết định
+            # Bước 8: Vẽ và lưu cây quyết định
             plt.figure(figsize=(20, 10))
-            plot_tree(
-                clf_entropy,
-                feature_names=X.columns,
-                class_names=y_encoder.classes_,
-                filled=True
-            )
+            plot_tree(clf_entropy, feature_names=X.columns, class_names=y_encoder.classes_, filled=True)
             image_path = 'static/decision_tree_entropy.png'
             plt.savefig(image_path)
             plt.close()
@@ -593,8 +579,7 @@ def decision_tree_gain(request):
             # Truyền dữ liệu sang giao diện
             context = {
                 'steps': steps,
-                'calculations': calculations,
-                'tree_rules': tree_rules,
+                'calculations': all_calculations,
                 'if_then_rules': if_then_rules,
                 'accuracy': accuracy,
                 'results': f'Độ chính xác của mô hình: {accuracy:.2f}',
@@ -605,7 +590,7 @@ def decision_tree_gain(request):
 
         except Exception as e:
             steps.append(f"Lỗi xử lý: {str(e)}")
-            return render(request, 'gain.html', {'error': f'Lỗi xử lý tệp: {str(e)}', 'steps': steps})
+            return render(request, 'gain.html', {'error': f'Lỗi xử lý: {str(e)}', 'steps': steps})
 
     return render(request, 'gain.html')
 
