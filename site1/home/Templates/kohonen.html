@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phân Cụm Kohonen</title>
+    <title>KMeans Clustering</title>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
       rel="stylesheet"
@@ -31,6 +31,7 @@
             color: white;
             border: none;
             border-radius: 5px;
+            margin-left:105px;
         }
         button:hover {
             background-color: #1e293b;
@@ -119,7 +120,7 @@
           }
     
           .main-content {
-            margin-left: 320px;
+            margin-left: 400px;
             padding: 20px;
           }
     
@@ -295,21 +296,13 @@
             border-collapse: collapse;
             width: 100%;
         }
-
-        .cluster-table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .cluster-table th, .cluster-table td {
+        th, td {
             border: 1px solid #ddd;
             padding: 8px;
+            text-align: left;
         }
-
-        .cluster-table th {
-            background-color: #007bff;
-            color: white;
+        th {
+            background-color: #f2f2f2;
         }
     </style>
 </head>
@@ -436,71 +429,50 @@
           </li>
         </ul>
       </div>
-    
+
       <div class="main-content">
-        <h1>Phân Cụm Kohonen</h1>
+        <h1>Kohonen Self-Organizing Map</h1>
+
+        <!-- Form nhập liệu -->
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <label>Số dòng (nơron):</label>
+            <input type="number" name="rows" required><br><br>
+            <label>Số cột (nơron):</label>
+            <input type="number" name="cols" required><br><br>
+            <label>Tải file dữ liệu (CSV/Excel/TXT):</label>
+            <input type="file" name="input_file" accept=".csv,.xlsx,.txt" required><br><br>
+            <button type="submit">Chạy Thuật Toán</button>
+        </form>
     
-        <div class="form-container">
-            <!-- Form tải lên tệp -->
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <label for="file">Upload File:</label>
-                <input type="file" id="file" name="file" required>
-                <button type="submit">Tải lên</button>
-            </form>
+        {% if result_available %}
+            <h2>Nơron Chiến Thắng</h2>
+            <p>Vector Chiến Thắng: {{ winner_vector }}</p>
+            <p>Vị Trí Nơron Chiến Thắng: {{ winner_position }}</p>
+            <p>Khoảng Cách Nhỏ Nhất: {{ winner_distance }}</p>
     
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
+            <h2>Lưới Kohonen</h2>
+            <img src="data:image/png;base64,{{ graphic }}" alt="Lưới Kohonen">
     
-            {% if file_uploaded %}
-                <!-- Form chọn thuộc tính -->
-                <form method="POST">
-                    {% csrf_token %}
-                    <label>Chọn các thuộc tính để phân cụm:</label>
-                    {% for column in columns %}
-                        <div>
-                            <input type="checkbox" name="attributes" value="{{ column }}" id="attribute-{{ column }}">
-                            <label for="attribute-{{ column }}">{{ column }}</label>
-                        </div>
-                    {% endfor %}
-                    <button type="submit">Chạy Kohonen</button>
-                </form>
-            {% endif %}
-        </div>
-    
-        {% if success %}
-            <!-- Kết quả phân cụm -->
-            <div class="result">
-                <h2>Kết quả phân cụm Kohonen</h2>
-                <h3>Biểu đồ phân cụm:</h3>
-                <img src="data:image/png;base64,{{ img_uri }}" alt="Biểu đồ Kohonen" style="width: 100%; max-width: 600px;">
-    
-                <h3>Chi tiết cụm:</h3>
-                <table class="cluster-table">
-                    <thead>
+            <h2>Bảng Khoảng Cách</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vector</th>
+                        <th>Khoảng Cách đến trọng điểm</th>
+                        <th>Vị trí của Noron</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in distance_list %}
                         <tr>
-                            <th>Cụm</th>
-                            <th>Chi tiết</th>
+                            <td>{{ item.vector_index }}</td>
+                            <td>{{ item.min_distance }}</td>
+                            <td>{{ item.winner }}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        {% for cluster, details in cluster_details.items %}
-                            <tr>
-                                <td>{{ cluster }}</td>
-                                <td>
-                                    <ul>
-                                        {% for detail in details %}
-                                            <li>{{ detail }}</li>
-                                        {% endfor %}
-                                    </ul>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% endif %}
-    </div>    
 </body>
 </html>
