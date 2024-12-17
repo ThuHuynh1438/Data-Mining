@@ -27,10 +27,8 @@ urlpatterns = [
     path('reduct/', home.reduct, name='reduct'),
     path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
     path('HSTuongQuan/', home.HSTuongQuan, name='HSTuongQuan'),
-
-
-path('gini/', home.generate_tree_image, name='gini'),
-
+path('gain/', home.gain, name='gain'),
+path('gini/', home.gini, name='gini'),
 
     path('kmeans/', home.kmeans_view, name='kmeans'),
     path('bayes/', home.bayes_view, name='bayes'),

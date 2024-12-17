@@ -8,7 +8,7 @@ from math import log2
 from sklearn.tree import _tree
 from django.conf import settings
 from itertools import combinations
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn import metrics
@@ -24,6 +24,7 @@ from django.http import JsonResponse, HttpResponse
 from django.core.files.storage import FileSystemStorage
 from django.views.decorators.csrf import csrf_exempt
 import io
+from io import BytesIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 # Create your views here.
 def get_home(request):
@@ -448,264 +449,334 @@ def reduct(request):
         context['error'] = "Vui lòng tải lên file Excel trước."
 
     return render(request, 'reduct.html', context)
-# Tính chỉ số Gini
+# Tính Gini
 def calculate_gini(column):
     values, counts = np.unique(column, return_counts=True)
     total = sum(counts)
-    gini = 1 - sum((count / total) ** 2 for count in counts)
-    return gini
+    return 1 - sum((count / total) ** 2 for count in counts)
 
 def calculate_gini_for_attribute(data, attribute, target):
     total = len(data)
     gini_index = 0
     for value in data[attribute].unique():
         subset = data[data[attribute] == value]
-        subset_gini = calculate_gini(subset[target])
-        gini_index += (len(subset) / total) * subset_gini
+        gini_index += (len(subset) / total) * calculate_gini(subset[target])
     return gini_index
 
-# Tính Entropy
-def calculate_entropy(data, target_attr):
-    total = len(data)
-    entropy = 0
-    for value in data[target_attr].unique():
-        p = len(data[data[target_attr] == value]) / total
-        entropy -= p * math.log2(p)
-    return entropy
-
-# Tính Gain cho thuộc tính
-def calculate_information_gain(data, attribute, target_attr):
-    total_entropy = calculate_entropy(data, target_attr)
-    total = len(data)
-    attribute_entropy = 0
-
-    for value in data[attribute].unique():
-        subset = data[data[attribute] == value]
-        attribute_entropy += (len(subset) / total) * calculate_entropy(subset, target_attr)
-
-    gain = total_entropy - attribute_entropy
-    return gain
-
-# Xây dựng cây quyết định
-def build_tree(data, target, attributes):
+def build_tree_gini(data, target, attributes):
     tree = {}
     unique_classes = np.unique(data[target])
-    if len(unique_classes) == 1:  # Nếu chỉ có 1 nhãn, trả về nhãn đó
+    
+    # Nếu chỉ có một lớp kết quả, trả về lớp đó
+    if len(unique_classes) == 1:
         return unique_classes[0]
-    if not attributes:  # Nếu không còn thuộc tính để phân chia
+    
+    # Nếu không còn thuộc tính nào để chia, trả về lớp có số lượng lớn nhất
+    if not attributes:
         return data[target].mode()[0]
 
-    # Tính Gain cho từng thuộc tính và chọn thuộc tính có Gain cao nhất
-    gains = [calculate_information_gain(data, attr, target) for attr in attributes]
-    best_attr = attributes[np.argmax(gains)]  # Thuộc tính có Gain lớn nhất
+    # Tính Gini cho từng thuộc tính
+    gini_values = [calculate_gini_for_attribute(data, attr, target) for attr in attributes]
+    best_attr = attributes[np.argmin(gini_values)]
     tree[best_attr] = {}
 
-    # Phân chia dữ liệu dựa trên thuộc tính tốt nhất
-    for value in np.unique(data[best_attr]):
-        sub_data = data[data[best_attr] == value]
-        subtree = build_tree(sub_data, target, [attr for attr in attributes if attr != best_attr])
-        tree[best_attr][value] = subtree
+    # Chia dữ liệu theo giá trị của thuộc tính tốt nhất và tiếp tục xây dựng cây
+    for value, subset in data.groupby(best_attr):
+        remaining_attrs = [attr for attr in attributes if attr != best_attr]
+        tree[best_attr][value] = build_tree_gini(subset, target, remaining_attrs)
 
     return tree
 
-# Vẽ cây quyết định
-def draw_tree(tree, ax, x=0, y=0, dx=1, dy=1, parent_pos=None, edge_label=None):
+# Hàm vẽ cây quyết định sử dụng Gini
+def draw_tree_gini(tree, ax, x=0, y=0, dx=1, dy=1):
     if isinstance(tree, dict):
         root = list(tree.keys())[0]
         children = tree[root]
-
-        # Vẽ nút gốc
-        ax.text(x, y, root, ha='center', va='center', bbox=dict(facecolor='skyblue', edgecolor='black', boxstyle='round,pad=0.5'))
-
-        # Vẽ các nhánh con
+        ax.text(x, y, root, ha='center', va='center', bbox=dict(facecolor='skyblue', edgecolor='black'))
         n = len(children)
-        for i, (edge, child) in enumerate(children.items()):
+        for i, (edge, subtree) in enumerate(children.items()):
             child_x = x - dx * (n - 1) / 2 + i * dx
-            child_y = y - dy  # Tính y cho nhánh con
-
-            ax.plot([x, child_x], [y, child_y], 'k-', lw=2)  # Vẽ đường nối
-            ax.text((x + child_x) / 2, (y + child_y) / 2, edge, ha='center', va='center', color='red')  # Nhãn cạnh
-
-            draw_tree(child, ax, child_x, child_y, dx / 2, dy, (x, y), edge)
+            child_y = y - dy
+            ax.plot([x, child_x], [y, child_y], 'k-')
+            ax.text((x + child_x) / 2, (y + child_y) / 2, edge, color='red')
+            draw_tree_gini(subtree, ax, child_x, child_y, dx / 2, dy)
     else:
-        # Vẽ nút lá
-        ax.text(x, y, tree, ha='center', va='center', bbox=dict(facecolor='lightgreen', edgecolor='black', boxstyle='round,pad=0.5'))
+        ax.text(x, y, tree, ha='center', va='center', bbox=dict(facecolor='lightgreen', edgecolor='black'))
 
-# Chuyển đổi dataframe thành cây quyết định và vẽ trên matplotlib
-def generate_tree_image(data, target):
-    attributes = list(data.columns[:-1])
-    tree = build_tree(data, target, attributes)
+# Trích xuất các luật từ cây quyết định sử dụng Gini
+def extract_rules_gini(tree, current_rule="", rules=None):
+    if rules is None:
+        rules = []
+    if isinstance(tree, dict):
+        root = list(tree.keys())[0]
+        for value, subtree in tree[root].items():
+            new_rule = f"{current_rule} ({root}={value})"
+            extract_rules_gini(subtree, new_rule, rules)
+    else:
+        rules.append(f"{current_rule} THEN {tree}")
+    return rules
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.axis('off')
-    ax.set_title("Cây Quyết Định", fontsize=14)
-    draw_tree(tree, ax)
-
-    # Lưu cây quyết định vào file hình ảnh
-    buf = BytesIO()
-    canvas = FigureCanvas(fig)
-    canvas.print_png(buf)
-    return buf.getvalue()
-
-def upload_file(request):
-    if request.method == 'POST' and request.FILES['excel_file']:
-        file = request.FILES['excel_file']
+# Hàm xử lý request và xây dựng cây quyết định bằng Gini
+def gini(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        uploaded_file = request.FILES['file']
         fs = FileSystemStorage()
-        filename = fs.save(file.name, file)
-        filepath = fs.url(filename)
+        file_path = fs.save(uploaded_file.name, uploaded_file)
+        full_path = os.path.join(settings.MEDIA_ROOT, file_path)
 
-        # Đọc file Excel và tính toán cây quyết định
-        data = pd.read_excel(filepath)
-        target = data.columns[-1]
+        try:
+            # Đọc file Excel và xây dựng cây
+            data = pd.read_excel(full_path)
+            target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
+            attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
 
-        # Tạo hình ảnh cây quyết định
-        image_data = generate_tree_image(data, target)
+            # Tạo cây quyết định và vẽ cây
+            tree = build_tree_gini(data, target, attributes)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.axis('off')
+            draw_tree_gini(tree, ax)
 
-        # Trả về trang gini.html với hình ảnh cây quyết định
-        return render(request, 'gini.html', {'image_data': image_data})
+            # Lưu hình ảnh cây quyết định
+            image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gini.png')
+            plt.savefig(image_path, bbox_inches='tight')
+            image_path = fs.url('decision_tree_gini.png')
+
+            # Trích xuất các quy tắc
+            rules = extract_rules_gini(tree)
+
+            return render(request, 'gini.html', {'image_url': image_path, 'rules': "\n".join(rules)})
+
+        except Exception as e:
+            return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
 
     return render(request, 'gini.html')
+# Tính entropy
+def entropy(data):
+    total = len(data)
+    value_counts = data.value_counts()
+    return -sum((count / total) * log2(count / total) for count in value_counts if count > 0)
+
+# Tính Information Gain cho thuộc tính
+def information_gain(data, attribute, target):
+    # Entropy của dữ liệu trước khi chia
+    entropy_before = entropy(data[target])
+
+    # Entropy của dữ liệu sau khi chia theo thuộc tính
+    subsets = data.groupby(attribute)
+    total = len(data)
+    weighted_entropy = sum((len(subset) / total) * entropy(subset[target]) for _, subset in subsets)
+
+    # Gain = Entropy ban đầu - Entropy sau khi chia
+    return entropy_before - weighted_entropy
+
+# Xây dựng cây quyết định sử dụng Gain
+def build_tree_gain(data, target, attributes):
+    tree = {}
+    unique_classes = data[target].unique()
+    
+    # Nếu chỉ có một lớp kết quả, trả về lớp đó
+    if len(unique_classes) == 1:
+        return unique_classes[0]
+    
+    # Nếu không còn thuộc tính nào để chia, trả về lớp có số lượng lớn nhất
+    if not attributes:
+        return data[target].mode()[0]
+
+    # Tính Information Gain cho từng thuộc tính
+    gains = [information_gain(data, attr, target) for attr in attributes]
+    best_attr = attributes[np.argmax(gains)]
+    tree[best_attr] = {}
+
+    # Chia dữ liệu theo giá trị của thuộc tính tốt nhất và tiếp tục xây dựng cây
+    for value, subset in data.groupby(best_attr):
+        remaining_attrs = [attr for attr in attributes if attr != best_attr]
+        tree[best_attr][value] = build_tree_gain(subset, target, remaining_attrs)
+
+    return tree
+
+# Hàm vẽ cây quyết định
+def draw_tree_gain(tree, ax, x=0, y=0, dx=1, dy=1):
+    if isinstance(tree, dict):
+        root = list(tree.keys())[0]
+        children = tree[root]
+        ax.text(x, y, root, ha='center', va='center', bbox=dict(facecolor='skyblue', edgecolor='black'))
+        n = len(children)
+        for i, (edge, subtree) in enumerate(children.items()):
+            child_x = x - dx * (n - 1) / 2 + i * dx
+            child_y = y - dy
+            ax.plot([x, child_x], [y, child_y], 'k-')
+            ax.text((x + child_x) / 2, (y + child_y) / 2, edge, color='red')
+            draw_tree_gain(subtree, ax, child_x, child_y, dx / 2, dy)
+    else:
+        ax.text(x, y, tree, ha='center', va='center', bbox=dict(facecolor='lightgreen', edgecolor='black'))
+
+# Trích xuất các luật từ cây quyết định
+def extract_rules_gain(tree, current_rule="", rules=None):
+    if rules is None:
+        rules = []
+    if isinstance(tree, dict):
+        root = list(tree.keys())[0]
+        for value, subtree in tree[root].items():
+            new_rule = f"{current_rule} ({root}={value})"
+            extract_rules_gain(subtree, new_rule, rules)
+    else:
+        rules.append(f"{current_rule} THEN {tree}")
+    return rules
+
+# Hàm xử lý request và xây dựng cây quyết định bằng Gain
+def gain(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        uploaded_file = request.FILES['file']
+        fs = FileSystemStorage()
+        file_path = fs.save(uploaded_file.name, uploaded_file)
+        full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+
+        try:
+            # Đọc file Excel và xây dựng cây
+            data = pd.read_excel(full_path)
+            target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
+            attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
+
+            # Tạo cây quyết định và vẽ cây
+            tree = build_tree_gain(data, target, attributes)
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.axis('off')
+            draw_tree_gain(tree, ax)
+
+            # Lưu hình ảnh cây quyết định
+            image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gain.png')
+            plt.savefig(image_path, bbox_inches='tight')
+            image_path = fs.url('decision_tree_gain.png')
+
+            # Trích xuất các quy tắc
+            rules = extract_rules_gain(tree)
+
+            return render(request, 'gain.html', {'image_url': image_path, 'rules': "\n".join(rules)})
+
+        except Exception as e:
+            return render(request, 'gain.html', {'error': f'Error processing file: {str(e)}'})
+
+    return render(request, 'gain.html')
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
-# Thuật toán K-means
-def kmeans(points, centroids, k, max_iters=100):
-    for _ in range(max_iters):
-        clusters = [[] for _ in range(k)]
-        for point in points:
-            distances = [euclidean_distance(point, centroid) for centroid in centroids]
-            closest_centroid = np.argmin(distances)
-            clusters[closest_centroid].append(point)
 
-        new_centroids = []
-        for cluster in clusters:
-            if cluster:
-                new_centroid = np.mean(cluster, axis=0)
-                new_centroids.append(new_centroid)
-            else:
-                new_centroids.append(centroids[len(new_centroids)])
+def read_file(file):
+    """Hàm đọc file dữ liệu: CSV, Excel, TXT."""
+    try:
+        if file.name.endswith('.csv'):
+            return pd.read_csv(file).values
+        elif file.name.endswith('.xlsx') or file.name.endswith('.xls'):
+            return pd.read_excel(file).values
+        elif file.name.endswith('.txt'):
+            return pd.read_csv(file, delimiter="\t").values
+        else:
+            raise ValueError("File phải có định dạng .csv, .xlsx hoặc .txt")
+    except Exception as e:
+        raise ValueError(f"Lỗi khi đọc file: {e}")
 
-        if np.allclose(new_centroids, centroids):
+def kmeans(points, k=2, epsilon=1e-6, max_iter=100):
+    """
+    Thuật toán K-Means với chi tiết từng lần lặp.
+    """
+    n = len(points)
+    U = np.zeros((k, n))
+    U[0, 0] = 1  # Gán điểm đầu tiên vào cụm 1
+    U[1, 1:] = 1  # Gán các điểm còn lại vào cụm 2
+
+    points = np.array(points)
+    centroids = np.zeros((k, points.shape[1]))  # Trọng tâm các cụm
+    iterations = []  # Danh sách lưu thông tin từng vòng lặp
+
+    for iteration in range(max_iter):
+        # Bước 1: Tính trọng tâm cụm
+        for i in range(k):
+            indices = np.where(U[i] == 1)[0]
+            if len(indices) > 0:
+                centroids[i] = np.mean(points[indices], axis=0)
+
+        # Bước 2: Tính khoảng cách và gán điểm vào cụm gần nhất
+        new_U = np.zeros_like(U)
+        for j, point in enumerate(points):
+            distances = [np.linalg.norm(point - centroids[i]) for i in range(k)]
+            closest_cluster = np.argmin(distances)
+            new_U[closest_cluster, j] = 1
+
+        # Tính sự thay đổi giữa ma trận mới và cũ
+        diff = np.linalg.norm(new_U - U)
+
+        # Lưu thông tin vòng lặp
+        iterations.append({
+            'iteration': iteration + 1,
+            'centroids': centroids.copy(),
+            'U': new_U.copy(),
+            'diff': diff
+        })
+
+        # Kiểm tra điều kiện dừng
+        if diff < epsilon:
+            print(f"Thuật toán hội tụ sau {iteration + 1} lần lặp với |U_n - U_{n-1}| = {diff:.6f}")
             break
 
-        centroids = new_centroids
+        U = new_U
 
-    return centroids, clusters
-
-# Thuật toán K-means
-def kmeans(points, centroids, k, max_iters=100):
-    for _ in range(max_iters):
-        clusters = [[] for _ in range(k)]
-        for point in points:
-            distances = [euclidean_distance(point, centroid) for centroid in centroids]
-            closest_centroid = np.argmin(distances)
-            clusters[closest_centroid].append(point)
-
-        new_centroids = []
-        for cluster in clusters:
-            if cluster:
-                new_centroid = np.mean(cluster, axis=0)
-                new_centroids.append(new_centroid)
-            else:
-                new_centroids.append(centroids[len(new_centroids)])
-
-        if np.allclose(new_centroids, centroids):
-            break
-
-        centroids = new_centroids
-
-    return centroids, clusters
+    clusters = np.argmax(U, axis=0)
+    return centroids, clusters, iterations
 
 def kmeans_view(request):
+    """
+    Hàm view xử lý thuật toán K-Means và truyền kết quả về template.
+    """
     context = {}
+    if request.method == "POST":
+        try:
+            # Lấy dữ liệu từ form
+            k = int(request.POST['k'])
+            input_file = request.FILES['input_file']
+            points = read_file(input_file)
 
-    if request.method == 'POST':
-        if 'file' in request.FILES:
-            try:
-                file = request.FILES['file']
-                df = pd.read_excel(file)
-                df = df.dropna()  # Remove null values
-                request.session['df'] = df.to_dict()
-                context['columns'] = df.columns.tolist()
-                context['file_uploaded'] = True
-            except Exception as e:
-                context['error'] = f"Lỗi khi đọc tệp: {str(e)}"
+            # Chạy thuật toán K-Means
+            centroids, clusters, iterations = kmeans(points, k)
 
-        elif request.POST.getlist('attributes'):
-            try:
-                df = pd.DataFrame(request.session['df'])
-                selected_attributes = request.POST.getlist('attributes')
-                if not selected_attributes:
-                    context['error'] = "Vui lòng chọn các thuộc tính để phân cụm."
-                    context['columns'] = df.columns.tolist()
-                    return render(request, 'kmeans.html', context)
-
-                data = df[selected_attributes].copy()
-                for col in selected_attributes:
-                    if data[col].dtype == 'object':
-                        le = LabelEncoder()
-                        data[col] = le.fit_transform(data[col].astype(str))
-
-                scaler = StandardScaler()
-                data_scaled = scaler.fit_transform(data)
-
-                distortions = []
-                K = range(1, 11)
-                for k in K:
-                    kmeans = KMeans(n_clusters=k, random_state=42)
-                    kmeans.fit(data_scaled)
-                    distortions.append(kmeans.inertia_)
-
-                plt.figure(figsize=(8, 6))
-                plt.plot(K, distortions, 'bx-')
-                plt.xlabel('Số cụm (k)')
-                plt.ylabel('Độ méo (Inertia)')
-                plt.title('Phương pháp Elbow')
-                elbow_buffer = io.BytesIO()
-                plt.savefig(elbow_buffer, format='png')
-                elbow_buffer.seek(0)
-                elbow_uri = base64.b64encode(elbow_buffer.read()).decode('utf-8')
-                plt.close()
-
-                knee_locator = knee_locator(K, distortions, curve='convex', direction='decreasing')
-                optimal_k = knee_locator.knee
-
-                kmeans = KMeans(n_clusters=optimal_k, random_state=42)
-                clusters = kmeans.fit_predict(data_scaled)
-
-                df['Cluster'] = clusters
-
-                plt.figure(figsize=(8, 6))
-                plt.scatter(data_scaled[:, 0], data_scaled[:, 1], c=clusters, cmap='viridis')
-                plt.title('Phân Cụm KMeans')
-                plt.xlabel(selected_attributes[0])
-                plt.ylabel(selected_attributes[1])
-                cluster_buffer = io.BytesIO()
-                plt.savefig(cluster_buffer, format='png')
-                cluster_buffer.seek(0)
-                cluster_uri = base64.b64encode(cluster_buffer.read()).decode('utf-8')
-                plt.close()
-
-                cluster_details = {}
-                for cluster in np.unique(clusters):
-                    cluster_data = df[df['Cluster'] == cluster][selected_attributes].to_dict('records')
-                    cluster_details[f'Cụm {cluster + 1}'] = cluster_data
-
-                silhouette_avg = metrics.silhouette_score(data_scaled, clusters)
-
-                context.update({
-                    'success': True,
-                    'optimal_k': optimal_k,
-                    'silhouette_score': round(silhouette_avg, 4),
-                    'elbow_uri': elbow_uri,
-                    'cluster_uri': cluster_uri,
-                    'cluster_details': cluster_details,
+            # Tạo danh sách chi tiết từng cụm cuối cùng
+            final_clusters = []
+            for i in range(k):
+                cluster_points = points[np.where(clusters == i)]
+                final_clusters.append({
+                    'cluster_id': i + 1,
+                    'centroid': centroids[i],
+                    'points': cluster_points.tolist()
                 })
-            except Exception as e:
-                context['error'] = f"Lỗi khi chạy KMeans: {str(e)}"
+
+            # Vẽ biểu đồ kết quả cuối cùng
+            plt.figure(figsize=(8, 6))
+            for i in range(k):
+                cluster_points = points[clusters == i]
+                plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cụm {i+1}', alpha=0.7)
+            plt.scatter(centroids[:, 0], centroids[:, 1], c='red', marker='x', s=200, label='Trọng tâm')
+            plt.title("K-Means Clustering - Kết Quả Cuối")
+            plt.xlabel("Feature 1")
+            plt.ylabel("Feature 2")
+            plt.legend()
+
+            # Chuyển đồ thị thành ảnh base64
+            buffer = BytesIO()
+            plt.savefig(buffer, format="png")
+            buffer.seek(0)
+            graphic = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            buffer.close()
+            plt.close()
+
+            # Truyền kết quả về context
+            context['graphic'] = graphic
+            context['final_clusters'] = final_clusters
+            context['iterations'] = iterations
+            context['result_available'] = True
+
+        except Exception as e:
+            context['error'] = f"Lỗi: {e}"
 
     return render(request, 'kmeans.html', context)
-
 def bayes_view(request):
     context = {}
 
@@ -881,103 +952,97 @@ def laplace_view(request):
 
     return render(request, 'laplace.html', context)
 
+def read_file(file):
+    """Hàm đọc file bất kỳ: CSV, Excel, TXT."""
+    try:
+        if file.name.endswith('.csv'):
+            data = pd.read_csv(file)
+        elif file.name.endswith('.xlsx') or file.name.endswith('.xls'):
+            data = pd.read_excel(file)
+        elif file.name.endswith('.txt'):
+            data = pd.read_csv(file, delimiter="\t")
+        else:
+            raise ValueError("File phải có định dạng .csv, .xlsx hoặc .txt")
+        return data.values  # Trả về numpy array
+    except Exception as e:
+        raise ValueError(f"Lỗi khi đọc file: {e}")
+
 def kohonen_view(request):
     context = {}
+    if request.method == "POST":
+        try:
+            # Lấy dữ liệu từ form
+            rows = int(request.POST['rows'])  # Số dòng (nơron)
+            cols = int(request.POST['cols'])  # Số cột (nơron)
+            
+            # Đọc file dữ liệu từ người dùng
+            input_file = request.FILES['input_file']
+            data = read_file(input_file)  # Mảng numpy đầu vào
 
-    if request.method == 'POST':
-        if request.FILES.get('file'):
-            try:
-                # Đọc tệp Excel
-                file = request.FILES['file']
-                df = pd.read_excel(file)
+            # Khởi tạo trọng số ngẫu nhiên W (mảng trọng số w_ij)
+            wij = np.random.rand(rows, cols, data.shape[1])
 
-                # Lưu dữ liệu vào session
-                request.session['df'] = df.to_dict()
-                context['columns'] = df.columns.tolist()
-                context['file_uploaded'] = True
+            # Tính khoảng cách Euclid từ từng vector đến tất cả nơron
+            distance_list = []
+            winner_vector = None
+            winner_distance = float('inf')
+            winner_position = None
 
-            except Exception as e:
-                context['error'] = f"Lỗi khi đọc tệp: {str(e)}"
+            for idx, vector in enumerate(data):
+                dist = np.linalg.norm(wij - vector, axis=2)  # Khoảng cách tới tất cả nơron
+                min_distance = np.min(dist)  # Khoảng cách nhỏ nhất đến lưới
+                winner = np.unravel_index(np.argmin(dist), (rows, cols))  # Nơron chiến thắng
 
-        elif request.POST.getlist('attributes'):
-            try:
-                # Lấy dữ liệu từ session
-                df = pd.DataFrame(request.session['df'])
+                # Kiểm tra và chọn vector chiến thắng duy nhất
+                if min_distance < winner_distance:
+                    winner_distance = min_distance
+                    winner_vector = vector
+                    winner_position = winner
 
-                # Lấy các thuộc tính được chọn
-                selected_attributes = request.POST.getlist('attributes')
-                if not selected_attributes:
-                    context['error'] = "Vui lòng chọn các thuộc tính để phân cụm."
-                    context['columns'] = df.columns.tolist()
-                    return render(request, 'kohonen.html', context)
-
-                # Tiền xử lý dữ liệu
-                data = df[selected_attributes].copy()
-                for col in selected_attributes:
-                    if data[col].dtype == 'object':
-                        le = LabelEncoder()
-                        data[col] = le.fit_transform(data[col].astype(str))
-
-                scaler = StandardScaler()
-                data_scaled = scaler.fit_transform(data)
-
-                # Khởi tạo lưới Kohonen
-                grid_shape = (5, 5)
-                learning_rate = 0.5
-                radius = 1.0
-                epochs = 100
-                grid = np.random.rand(grid_shape[0], grid_shape[1], data_scaled.shape[1])
-
-                # Huấn luyện Kohonen
-                for epoch in range(epochs):
-                    for sample in data_scaled:
-                        # Tìm neuron chiến thắng
-                        distances = np.linalg.norm(grid - sample, axis=2)
-                        bmu_idx = np.unravel_index(np.argmin(distances), distances.shape)
-
-                        # Cập nhật trọng số
-                        for i in range(grid.shape[0]):
-                            for j in range(grid.shape[1]):
-                                dist_to_bmu = np.sqrt((i - bmu_idx[0]) ** 2 + (j - bmu_idx[1]) ** 2)
-                                if dist_to_bmu <= radius:
-                                    influence = np.exp(-dist_to_bmu / (2 * (radius ** 2)))
-                                    grid[i, j] += learning_rate * influence * (sample - grid[i, j])
-
-                # Dự đoán cụm
-                predictions = []
-                for sample in data_scaled:
-                    distances = np.linalg.norm(grid - sample, axis=2)
-                    bmu_idx = np.unravel_index(np.argmin(distances), distances.shape)
-                    predictions.append(bmu_idx)
-
-                # Thêm kết quả phân cụm vào DataFrame
-                df['Cluster'] = [f"({p[0]}, {p[1]})" for p in predictions]
-
-                # Trực quan hóa kết quả phân cụm
-                plt.figure(figsize=(8, 6))
-                plt.scatter(data_scaled[:, 0], data_scaled[:, 1], c=[p[0] * grid_shape[1] + p[1] for p in predictions], cmap='viridis')
-                plt.title('Phân Cụm Kohonen')
-                plt.xlabel(selected_attributes[0])
-                plt.ylabel(selected_attributes[1])
-                buffer = io.BytesIO()
-                plt.savefig(buffer, format='png')
-                buffer.seek(0)
-                img_uri = base64.b64encode(buffer.read()).decode('utf-8')
-                plt.close()
-
-                # Chi tiết cụm
-                cluster_details = {}
-                for cluster in df['Cluster'].unique():
-                    cluster_details[cluster] = df[df['Cluster'] == cluster][selected_attributes].to_dict('records')
-
-                # Trả kết quả ra giao diện
-                context.update({
-                    'success': True,
-                    'img_uri': img_uri,
-                    'cluster_details': cluster_details
+                # Lưu khoảng cách của vector
+                distance_list.append({
+                    'vector_index': idx + 1,
+                    'distances': dist.tolist(),
+                    'min_distance': min_distance,
+                    'winner': winner
                 })
 
-            except Exception as e:
-                context['error'] = f"Lỗi khi chạy Kohonen: {str(e)}"
+            # Vẽ lưới và đánh dấu nơron chiến thắng duy nhất
+            plt.figure(figsize=(8, 8))
+            for i in range(rows):
+                for j in range(cols):
+                    plt.scatter(j, rows - i - 1, s=500, c="lightgray", edgecolors='black')
+                    plt.text(j, rows - i - 1, f'({i},{j})', ha='center', va='center', fontsize=8)
+
+            # Đánh dấu nơron chiến thắng
+            if winner_position:
+                i, j = winner_position
+                plt.scatter(j, rows - i - 1, s=500, c="red", edgecolors='black')
+                plt.text(j, rows - i - 1, "WIN", ha='center', va='center', color='white', fontsize=10)
+
+            plt.title("Lưới Kohonen và Nơron Chiến Thắng")
+            plt.xticks(range(cols))
+            plt.yticks(range(rows))
+            plt.grid(True)
+            plt.gca().invert_yaxis()
+
+            # Chuyển đồ thị thành ảnh base64
+            buffer = BytesIO()
+            plt.savefig(buffer, format="png")
+            buffer.seek(0)
+            graphic = base64.b64encode(buffer.getvalue()).decode('utf-8')
+            buffer.close()
+            plt.close()
+
+            # Truyền kết quả vào context
+            context['distance_list'] = distance_list
+            context['winner_vector'] = winner_vector
+            context['winner_distance'] = winner_distance
+            context['winner_position'] = winner_position
+            context['graphic'] = graphic
+            context['result_available'] = True
+
+        except Exception as e:
+            context['error'] = f"Lỗi: {e}"
 
     return render(request, 'kohonen.html', context)

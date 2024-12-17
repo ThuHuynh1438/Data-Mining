@@ -31,6 +31,7 @@
             color: white;
             border: none;
             border-radius: 5px;
+            margin-left:105px;
         }
         button:hover {
             background-color: #1e293b;
@@ -250,6 +251,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+      
           }
         
           .form-group button:hover {
@@ -343,7 +345,7 @@
             </a>
             <ul class="sub-menu" id="classification">
               <li>
-                <a href="bayes" id="popular-link">
+                <a href="bayes">
                   <i class="fas fa-arrow-circle-right"></i>
                   Bayes
                 </a>
@@ -430,70 +432,84 @@
       </div>
 
       <div class="main-content">
-        <h1>Gom cụm KMeans</h1>
-    
-        <div class="form-container">
-            <form method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <label for="file">Upload File:</label>
-                <input type="file" id="file" name="file">
-                <button type="submit">Tải lên</button>
-            </form>
-    
-            {% if error %}
-                <p class="error">{{ error }}</p>
-            {% endif %}
-    
-            {% if file_uploaded %}
-                <form method="POST">
-                    {% csrf_token %}
-                    <h3>Chọn các thuộc tính để phân cụm:</h3>
-                    {% for column in columns %}
-                        <input type="checkbox" name="attributes" value="{{ column }}" id="attr-{{ column }}">
-                        <label for="attr-{{ column }}">{{ column }}</label><br>
+        <h1>K-Means Clustering</h1>
+
+    <!-- Form nhập dữ liệu -->
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="k">Số cụm (K):</label>
+        <input type="number" name="k" placeholder="Nhập số cụm" required>
+        <label for="input_file">Upload File</label>
+        <input type="file" name="input_file" accept=".csv,.xlsx,.txt" required>
+        <button type="submit">Tính toán</button>
+    </form>
+
+    <!-- Kết quả cuối cùng -->
+    {% if result_available %}
+        <h2>Kết Quả Phân Cụm Cuối Cùng</h2>
+        <img src="data:image/png;base64,{{ graphic }}" alt="K-Means Clustering">
+
+        <!-- Hiển thị thông tin các cụm -->
+        <h3>Thông Tin Từng Cụm</h3>
+        {% for cluster in final_clusters %}
+            <h4>Cụm {{ cluster.cluster_id }}</h4>
+            <p><strong>Trọng tâm:</strong> {{ cluster.centroid }}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Điểm thuộc cụm {{ cluster.cluster_id }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for point in cluster.points %}
+                        <tr>
+                            <td>{{ point }}</td>
+                        </tr>
                     {% endfor %}
-                    <button type="submit">Chạy KMeans</button>
-                </form>
-            {% endif %}
-        </div>
-    
-        {% if success %}
-            <div class="result">
-                <h2>Kết quả:</h2>
-                <p><strong>Số cụm tối ưu (k):</strong> {{ optimal_k }}</p>
-                <p><strong>Độ chính xác:</strong> {{ silhouette_score }}</p>
-                
-                <h3>Phương pháp Elbow:</h3>
-                <img src="data:image/png;base64,{{ elbow_uri }}" alt="Elbow Chart">
-                
-                <h3>Gom cụ KMeans:</h3>
-                <img src="data:image/png;base64,{{ cluster_uri }}" alt="Cluster Chart">
-                
-                <h3>Chi tiết từng cụm:</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Cụm</th>
-                            <th>Chi tiết</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cluster, details in cluster_details.items %}
-                        <tr>
-                            <td>{{ cluster }}</td>
-                            <td>
-                                <ul>
-                                    {% for detail in details %}
-                                    <li>{{ detail }}</li>
-                                    {% endfor %}
-                                </ul>
-                            </td>
-                        </tr>
+                </tbody>
+            </table>
+        {% endfor %}
+
+        <!-- Chi tiết từng lần lặp -->
+        <h3>Chi Tiết Từng Lần Lặp</h3>
+        {% for iteration in iterations %}
+            <h4>Lần Lặp {{ iteration.iteration }}</h4>
+            <p><strong>Trọng tâm cụm:</strong></p>
+            <ul>
+                {% for centroid in iteration.centroids %}
+                    <li>{{ centroid }}</li>
+                {% endfor %}
+            </ul>
+
+            <p><strong>Ma Trận Phân Hoạch U:</strong></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cụm/Điểm</th>
+                        {% for _ in iteration.U.0 %}
+                            <th>Điểm {{ forloop.counter }}</th>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% endif %}
-    </div>    
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in iteration.U %}
+                        <tr>
+                            <td>C{{ forloop.counter }}</td>
+                            {% for value in row %}
+                                <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p><strong>Sai Số (|U_n - U_{n-1}|):</strong> {{ iteration.diff }}</p>
+            <hr>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Thông báo lỗi -->
+    {% if error %}
+        <h3 style="color: red; text-align: center;">{{ error }}</h3>
+    {% endif %}
 </body>
 </html>
