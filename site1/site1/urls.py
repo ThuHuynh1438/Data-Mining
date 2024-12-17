@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from home import views as home
+from django.conf import settings  # Import settings
+from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home.get_home, name='homepage'),
@@ -25,10 +27,15 @@ urlpatterns = [
     path('reduct/', home.reduct, name='reduct'),
     path('TapPhoBien/', home.TapPhoBien, name='TapPhoBien'),
     path('HSTuongQuan/', home.HSTuongQuan, name='HSTuongQuan'),
-    path('gain/', home.decision_tree_gain, name='gain'),
-    path('gini/', home.decision_tree_gini, name='gini'),
+
+
+path('gini/', home.generate_tree_image, name='gini'),
+
+
     path('kmeans/', home.kmeans_view, name='kmeans'),
     path('bayes/', home.bayes_view, name='bayes'),
     path('laplace/', home.laplace_view, name='laplace'), 
     path('kohonen/', home.kohonen_view, name='kohonen'), 
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

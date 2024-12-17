@@ -448,268 +448,123 @@ def reduct(request):
         context['error'] = "Vui lòng tải lên file Excel trước."
 
     return render(request, 'reduct.html', context)
-
-# Hàm tính Entropy của dữ liệu
-def calculate_entropy(data, target_column):
-    # Tính tần suất của các giá trị trong cột mục tiêu
-    value_counts = data[target_column].value_counts(normalize=True)
-    
-    # Tính Entropy
-    entropy = -sum(value_counts * np.log2(value_counts))
-    return entropy
-
-# Hàm tính Information Gain
-def calculate_information_gain(data, feature_column, target_column):
-    total_entropy = calculate_entropy(data, target_column)
-    feature_values = data[feature_column].value_counts(normalize=True)
-    weighted_entropy = 0
-    for feature_value, weight in feature_values.items():
-        subset = data[data[feature_column] == feature_value]
-        weighted_entropy += weight * calculate_entropy(subset, target_column)
-    info_gain = total_entropy - weighted_entropy
-    return info_gain
-
-
-def decision_tree_gain(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        try:
-            steps = []  # Store steps
-            calculations = []  # Store detailed calculations
-            if_then_rules = []  # Store IF-THEN rules
-
-            # Step 1: Read uploaded file
-            file = request.FILES['file']
-            file_extension = os.path.splitext(file.name)[1]
-            steps.append("File uploaded successfully.")
-
-            if file_extension == '.csv':
-                data = pd.read_csv(file)
-            elif file_extension in ['.xls', '.xlsx']:
-                data = pd.read_excel(file)
-            else:
-                steps.append("Error: File must be in CSV or Excel format.")
-                return render(request, 'gain.html', {'error': 'Please upload a CSV or Excel file!', 'steps': steps})
-
-            steps.append("Data successfully loaded from the file.")
-
-            # Preview data
-            data_preview = data.to_html(classes='table table-striped')
-
-            # Step 2: Calculate Information Gain for each feature
-            target_column = data.columns[-1]  # Assuming the last column is the target
-            info_gain_results = []
-            for feature in data.columns[:-1]:  # Exclude the target column
-                info_gain = calculate_information_gain(data, feature, target_column)
-                info_gain_results.append(f"Information Gain for '{feature}': {info_gain:.4f}")
-
-            calculations = "\n".join(info_gain_results)
-
-            # Step 3: Train decision tree and generate rules & image
-            def decision_tree_algorithm(data):
-                # Encode categorical features
-                encoders = {}
-                for col in data.columns:
-                    if data[col].dtype == 'object':
-                        encoder = LabelEncoder()
-                        data[col] = encoder.fit_transform(data[col])
-                        encoders[col] = encoder
-
-                X = data.iloc[:, :-1]  # Features
-                y = data.iloc[:, -1]   # Target
-
-                # Train Decision Tree model
-                model = DecisionTreeClassifier(random_state=42)
-                model.fit(X, y)
-
-                # Generate IF-THEN rules
-                if_then_rules = generate_if_then_rules(model, list(X.columns))
-
-                # Plot and save the tree image for Gain
-                plt.figure(figsize=(12, 8))
-                plot_tree(model, feature_names=list(X.columns), class_names=model.classes_.astype(str), filled=True, rounded=True, fontsize=10)
-                plt.title("Decision Tree Visualization for Gain")
-
-                # Save the tree image for Gain
-                image_filename = 'decision_tree_gain.png'  # Save image with 'gain' in the filename
-                image_path = f"images/{image_filename}"  # Relative path from static directory
-                os.makedirs(os.path.join(settings.BASE_DIR, 'static', 'images'), exist_ok=True)
-                plt.savefig(os.path.join(settings.BASE_DIR, 'static', image_path))  # Save the image to the static folder
-                plt.close()
-
-                return if_then_rules, image_path
-
-            if_then_rules, image_path = decision_tree_algorithm(data)
-            steps.append("Decision tree model trained and image saved.")
-
-            # Pass data to template
-            context = {
-                'steps': steps,
-                'calculations': calculations,
-                'if_then_rules': if_then_rules,  # Pass the IF-THEN rules
-                'tree_rules': '\n'.join(if_then_rules),  # Show IF-THEN rules
-                'image_path': image_path,  # Pass the relative path to the image
-                'data_preview': data_preview,
-            }
-            return render(request, 'gain.html', context)
-
-        except Exception as e:
-            steps.append(f"Processing error: {str(e)}")
-            return render(request, 'gain.html', {'error': f'File processing error: {str(e)}', 'steps': steps})
-
-    return render(request, 'gain.html')
-
-
-def generate_if_then_rules(model, feature_names):
-    tree_rules = []
-    # Truy cập vào cấu trúc của cây quyết định
-    tree_ = model.tree_
-    feature_name = [feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!" for i in tree_.feature]
-
-    def recurse(node, rule):
-        # Nếu đây là một lá cây (terminal node), tức là có dự đoán kết quả
-        if tree_.feature[node] == _tree.TREE_UNDEFINED:
-            tree_rules.append(f"{rule} THEN class = {tree_.value[node].argmax()}")
-        else:
-            # Nếu node này là một quyết định, kiểm tra điều kiện
-            name = feature_name[node]
-            threshold = tree_.threshold[node]
-            left = tree_.children_left[node]
-            right = tree_.children_right[node]
-            
-            # Tạo quy tắc IF-THEN cho node hiện tại
-            recurse(left, f"{rule} IF {name} <= {threshold}")
-            recurse(right, f"{rule} IF {name} > {threshold}")
-
-    recurse(0, "")  # Bắt đầu từ node gốc
-    return tree_rules
-
-
-# Hàm tính Gini Impurity của dữ liệu
-def calculate_gini(data, target_column):
-    value_counts = data[target_column].value_counts(normalize=True)
-    gini = 1 - sum(value_counts**2)
+# Tính chỉ số Gini
+def calculate_gini(column):
+    values, counts = np.unique(column, return_counts=True)
+    total = sum(counts)
+    gini = 1 - sum((count / total) ** 2 for count in counts)
     return gini
 
-# Hàm tính Gini Impurity cho các thuộc tính trong cây quyết định
-def calculate_feature_gini(model, X, feature_names):
-    feature_ginis = {}
-    tree_ = model.tree_
-    
-    # Lấy Gini của mỗi thuộc tính từ các node của cây quyết định
-    for i, feature_name in enumerate(feature_names):
-        feature_index = X.columns.get_loc(feature_name)
-        gini_values = tree_.impurity[tree_.feature == feature_index]
-        if len(gini_values) > 0:
-            feature_ginis[feature_name] = np.mean(gini_values)  # Tính trung bình Gini của các node có thuộc tính này
-        else:
-            feature_ginis[feature_name] = 0.0  # Nếu không có phân chia cho thuộc tính này
+def calculate_gini_for_attribute(data, attribute, target):
+    total = len(data)
+    gini_index = 0
+    for value in data[attribute].unique():
+        subset = data[data[attribute] == value]
+        subset_gini = calculate_gini(subset[target])
+        gini_index += (len(subset) / total) * subset_gini
+    return gini_index
 
-    return feature_ginis
+# Tính Entropy
+def calculate_entropy(data, target_attr):
+    total = len(data)
+    entropy = 0
+    for value in data[target_attr].unique():
+        p = len(data[data[target_attr] == value]) / total
+        entropy -= p * math.log2(p)
+    return entropy
 
-# Hàm trích xuất IF-THEN Rules từ cây quyết định
-def generate_if_then_rules(model, feature_names):
-    tree_rules = []
-    tree_ = model.tree_
-    feature_name = [feature_names[i] if i != _tree.TREE_UNDEFINED else "undefined!" for i in tree_.feature]
+# Tính Gain cho thuộc tính
+def calculate_information_gain(data, attribute, target_attr):
+    total_entropy = calculate_entropy(data, target_attr)
+    total = len(data)
+    attribute_entropy = 0
 
-    def recurse(node, rule):
-        if tree_.feature[node] == _tree.TREE_UNDEFINED:
-            tree_rules.append(f"{rule} THEN class = {tree_.value[node].argmax()}")
-        else:
-            name = feature_name[node]
-            threshold = tree_.threshold[node]
-            left = tree_.children_left[node]
-            right = tree_.children_right[node]
-            recurse(left, f"{rule} IF {name} <= {threshold}")
-            recurse(right, f"{rule} IF {name} > {threshold}")
+    for value in data[attribute].unique():
+        subset = data[data[attribute] == value]
+        attribute_entropy += (len(subset) / total) * calculate_entropy(subset, target_attr)
 
-    recurse(0, "")  # Bắt đầu từ node gốc
-    return tree_rules
+    gain = total_entropy - attribute_entropy
+    return gain
 
-def decision_tree_gini(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        try:
-            steps = []  # Store steps
-            calculations = []  # Store detailed calculations
-            if_then_rules = []  # Store IF-THEN rules
-            feature_ginis = {}  # Store Gini Impurity of features
+# Xây dựng cây quyết định
+def build_tree(data, target, attributes):
+    tree = {}
+    unique_classes = np.unique(data[target])
+    if len(unique_classes) == 1:  # Nếu chỉ có 1 nhãn, trả về nhãn đó
+        return unique_classes[0]
+    if not attributes:  # Nếu không còn thuộc tính để phân chia
+        return data[target].mode()[0]
 
-            # Step 1: Read uploaded file
-            file = request.FILES['file']
-            file_extension = os.path.splitext(file.name)[1]
-            steps.append("File uploaded successfully.")
+    # Tính Gain cho từng thuộc tính và chọn thuộc tính có Gain cao nhất
+    gains = [calculate_information_gain(data, attr, target) for attr in attributes]
+    best_attr = attributes[np.argmax(gains)]  # Thuộc tính có Gain lớn nhất
+    tree[best_attr] = {}
 
-            if file_extension == '.csv':
-                data = pd.read_csv(file)
-            elif file_extension in ['.xls', '.xlsx']:
-                data = pd.read_excel(file)
-            else:
-                steps.append("Error: File must be in CSV or Excel format.")
-                return render(request, 'gini.html', {'error': 'Please upload a CSV or Excel file!', 'steps': steps})
+    # Phân chia dữ liệu dựa trên thuộc tính tốt nhất
+    for value in np.unique(data[best_attr]):
+        sub_data = data[data[best_attr] == value]
+        subtree = build_tree(sub_data, target, [attr for attr in attributes if attr != best_attr])
+        tree[best_attr][value] = subtree
 
-            steps.append("Data successfully loaded from the file.")
+    return tree
 
-            # Preview data
-            data_preview = data.to_html(classes='table table-striped')
+# Vẽ cây quyết định
+def draw_tree(tree, ax, x=0, y=0, dx=1, dy=1, parent_pos=None, edge_label=None):
+    if isinstance(tree, dict):
+        root = list(tree.keys())[0]
+        children = tree[root]
 
-            # Step 2: Train decision tree and generate rules & image
-            def decision_tree_algorithm(data):
-                # Encode categorical features
-                encoders = {}
-                for col in data.columns:
-                    if data[col].dtype == 'object':
-                        encoder = LabelEncoder()
-                        data[col] = encoder.fit_transform(data[col])
-                        encoders[col] = encoder
+        # Vẽ nút gốc
+        ax.text(x, y, root, ha='center', va='center', bbox=dict(facecolor='skyblue', edgecolor='black', boxstyle='round,pad=0.5'))
 
-                X = data.iloc[:, :-1]  # Features
-                y = data.iloc[:, -1]   # Target
+        # Vẽ các nhánh con
+        n = len(children)
+        for i, (edge, child) in enumerate(children.items()):
+            child_x = x - dx * (n - 1) / 2 + i * dx
+            child_y = y - dy  # Tính y cho nhánh con
 
-                # Train Decision Tree model
-                model = DecisionTreeClassifier(random_state=42)
-                model.fit(X, y)
+            ax.plot([x, child_x], [y, child_y], 'k-', lw=2)  # Vẽ đường nối
+            ax.text((x + child_x) / 2, (y + child_y) / 2, edge, ha='center', va='center', color='red')  # Nhãn cạnh
 
-                # Generate IF-THEN rules
-                if_then_rules = generate_if_then_rules(model, list(X.columns))
+            draw_tree(child, ax, child_x, child_y, dx / 2, dy, (x, y), edge)
+    else:
+        # Vẽ nút lá
+        ax.text(x, y, tree, ha='center', va='center', bbox=dict(facecolor='lightgreen', edgecolor='black', boxstyle='round,pad=0.5'))
 
-                # Calculate Gini Impurity for each feature
-                feature_ginis = calculate_feature_gini(model, X, list(X.columns))
+# Chuyển đổi dataframe thành cây quyết định và vẽ trên matplotlib
+def generate_tree_image(data, target):
+    attributes = list(data.columns[:-1])
+    tree = build_tree(data, target, attributes)
 
-                # Plot and save the tree image
-                plt.figure(figsize=(12, 8))
-                plot_tree(model, feature_names=list(X.columns), class_names=model.classes_.astype(str), filled=True, rounded=True, fontsize=10)
-                plt.title("Decision Tree Visualization")
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.axis('off')
+    ax.set_title("Cây Quyết Định", fontsize=14)
+    draw_tree(tree, ax)
 
-                # Save the tree image
-                image_filename = 'decision_tree_plot.png'
-                image_path = f"images/{image_filename}"  # Relative path from static directory
-                os.makedirs(os.path.join(settings.BASE_DIR, 'static', 'images'), exist_ok=True)
-                plt.savefig(os.path.join(settings.BASE_DIR, 'static', image_path))  # Save the image to the static folder
-                plt.close()
+    # Lưu cây quyết định vào file hình ảnh
+    buf = BytesIO()
+    canvas = FigureCanvas(fig)
+    canvas.print_png(buf)
+    return buf.getvalue()
 
-                return if_then_rules, image_path, feature_ginis
+def upload_file(request):
+    if request.method == 'POST' and request.FILES['excel_file']:
+        file = request.FILES['excel_file']
+        fs = FileSystemStorage()
+        filename = fs.save(file.name, file)
+        filepath = fs.url(filename)
 
-            if_then_rules, image_path, feature_ginis = decision_tree_algorithm(data)
-            steps.append("Decision tree model trained and image saved.")
+        # Đọc file Excel và tính toán cây quyết định
+        data = pd.read_excel(filepath)
+        target = data.columns[-1]
 
-            # Pass data to template
-            context = {
-                'steps': steps,
-                'calculations': calculations,
-                'if_then_rules': if_then_rules,  # Pass the IF-THEN rules
-                'feature_ginis': feature_ginis,  # Pass Gini Impurity of features
-                'image_path': image_path,  # Pass the relative path to the image
-                'data_preview': data_preview,
-            }
-            return render(request, 'gini.html', context)
+        # Tạo hình ảnh cây quyết định
+        image_data = generate_tree_image(data, target)
 
-        except Exception as e:
-            steps.append(f"Processing error: {str(e)}")
-            return render(request, 'gini.html', {'error': f'File processing error: {str(e)}', 'steps': steps})
+        # Trả về trang gini.html với hình ảnh cây quyết định
+        return render(request, 'gini.html', {'image_data': image_data})
 
     return render(request, 'gini.html')
-
-
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
