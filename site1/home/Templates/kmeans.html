@@ -345,7 +345,7 @@
             </a>
             <ul class="sub-menu" id="classification">
               <li>
-                <a href="bayes" id="popular-link">
+                <a href="bayes">
                   <i class="fas fa-arrow-circle-right"></i>
                   Bayes
                 </a>
@@ -439,9 +439,9 @@
         {% csrf_token %}
         <label for="k">Số cụm (K):</label>
         <input type="number" name="k" placeholder="Nhập số cụm" required>
-        <label for="input_file">Tải file dữ liệu (CSV/Excel/TXT):</label>
+        <label for="input_file">Upload File</label>
         <input type="file" name="input_file" accept=".csv,.xlsx,.txt" required>
-        <button type="submit">Chạy Thuật Toán</button>
+        <button type="submit">Tính toán</button>
     </form>
 
     <!-- Kết quả cuối cùng -->

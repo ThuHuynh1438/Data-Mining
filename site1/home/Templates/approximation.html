@@ -284,7 +284,7 @@
               </a>
             </li>
             <li>
-              <a href="laplace.html">
+              <a href="laplace">
                 <i class="fas fa-arrow-circle-right"></i>
                 Laplace
               </a>
@@ -354,7 +354,7 @@
               </a>
             </li>
             <li>
-              <a href="kohonen.html">
+              <a href="kohonen">
                 <i class="fas fa-arrow-circle-right"></i>
                 Mạng Kohonen
               </a>
@@ -371,18 +371,18 @@
     
      <div class="content">
         <div class="form-container">
-          <h1>Tải file Excel lên tại đây</h1>
+          <h1>Nhâp dữ liệu</h1>
       
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+            <label for="file-upload">Upload File</label>
             <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
             <button id="upload-button" type="submit">Tải lên</button>
             <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
           </form>
 
           {% if data_preview %}
-            <h3>Preview Dữ Liệu</h3>
+            <h3>Dữ liệu</h3>
             <div class="table-responsive">
                 {{ data_preview|safe }}
             </div>
@@ -400,12 +400,12 @@
               <input type="hidden" name="file_path" value="{{ file_path }}" />
       
               <label >
-                <h2>Nhập tập đối tượng X "cách nhau bởi dấu ,":</h2>
+                <h2>Nhập tập đối tượng X:</h2>
               </label>
               <input type="text" name="target_set" id="target_set" value="{{ target_set|default:'' }}" required />
               </br> </br>
               <label>
-                <h2>Nhập tập thuộc tính "cách nhau bởi dấu ,"</h2>
+                <h2>Nhập tập thuộc tính:</h2>
               </label>
               <input type="text" name="attributes_set" id="attributes_set" value="{{ attributes_set|default:'' }}" required />
               </br> </br>
@@ -446,13 +446,11 @@
           {% if accuracy %}
           <p><strong>Độ chính xác:</strong> {{ accuracy }}</p>
           {% else %}
-          <p><strong>Độ chính xác:</strong> Không thể tính toán độ chính xác.</p>
+          <p><strong>Độ chính xác:</strong> Không thể tính toán độ chính xác!</p>
           {% endif %}
   
         </div>
      </div>
-
-
       <!-- Hiển thị lỗi nếu có -->
       {% comment %} {% if error %} {% endcomment %}
       {% comment %} <p style="color: red;">{{ error }}</p> {% endcomment %}

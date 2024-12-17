@@ -284,7 +284,7 @@
               </a>
             </li>
             <li>
-              <a href="laplace.html">
+              <a href="laplace">
                 <i class="fas fa-arrow-circle-right"></i>
                 Laplace
               </a>
@@ -354,7 +354,7 @@
               </a>
             </li>
             <li>
-              <a href="kohonen.html">
+              <a href="kohonen">
                 <i class="fas fa-arrow-circle-right"></i>
                 Mạng Kohonen
               </a>
@@ -371,19 +371,18 @@
     
       <div class="content">
         <div class="form-container">
-          <h1>Tải file Excel lên tại đây</h1>
-          <p>Chọn file Excel chứa nội dung bạn muốn phân tích, chúng tôi sẽ phân tích giúp bạn</p>
+          <h1>Nhập dữ liệu</h1>
       
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+            <label for="file-upload">Upload File</label>
             <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
             <button id="upload-button" type="submit">Tải lên</button>
-            <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
+            <p><strong>{% if file_name %}Tên file {{ file_name }}{% endif %}</strong></p>
           </form>
 
           {% if data_preview %}
-            <h3>Preview Dữ Liệu</h3>
+            <h3>Dữ liệu</h3>
             <div class="table-responsive">
                 {{ data_preview|safe }}
             </div>
@@ -418,7 +417,7 @@
                             <li>{{ rule }}</li>
                         {% endfor %}
                     {% else %}
-                        <li>Không tìm thấy luật phân lớp.</li>
+                        <li>Không tìm thấy luật phân lớp!</li>
                     {% endif %}
                 </ul>
             {% elif error %}

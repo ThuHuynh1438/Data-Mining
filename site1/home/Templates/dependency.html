@@ -284,7 +284,7 @@
               </a>
             </li>
             <li>
-              <a href="laplace.html">
+              <a href="laplace">
                 <i class="fas fa-arrow-circle-right"></i>
                 Laplace
               </a>
@@ -354,7 +354,7 @@
               </a>
             </li>
             <li>
-              <a href="kohonen.html">
+              <a href="kohonen">
                 <i class="fas fa-arrow-circle-right"></i>
                 Mạng Kohonen
               </a>
@@ -371,18 +371,18 @@
 
      <div class="content">
         <div class="form-container">
-          <h1>Tải file Excel lên tại đây</h1>
+          <h1>Nhập dữ liệu</h1>
   
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <label for="file-upload">Nhấn vào dòng này để chọn file Excel:</label>
+            <label for="file-upload">Upload File:</label>
             <input type="file" id="file-upload" name="excel_file" accept=".xlsx,.xls" required>
             <button id="upload-button" type="submit">Tải lên</button>
             <p><strong>{% if file_name %}Tên file: {{ file_name }}{% endif %}</strong></p>
           </form>
 
             {% if data_preview %}
-              <h2>Preview Dữ Liệu</h2>
+              <h2>Dữ liệu</h2>
               <div class="table-container">
                   {{ data_preview|safe }}
               </div>
@@ -400,16 +400,16 @@
               <input type="hidden" name="file_path" value="{{ file_path }}" />
   
               <label >
-                <h2>Khảo sát sự phụ thuộc thuộc tính của tập A "nhập thuộc tính tập A":</h2>
+                <h2>Nhập thuộc tính tập A:</h2>
               </label>
               <input type="text" name="target_setA" id="target_setA" value="{{ target_setA|default:'' }}" required />
               </br> </br>
               <label>
-                <h2>Tập B "Nhập thuộc tính tập B: cách nhau bởi dấu ,"</h2>
+                <h2>Nhập thuộc tính tập B:</h2>
               </label>
               <input type="text" name="attributes_setB" id="attributes_setB" value="{{ attributes_setB|default:'' }}" required />
               </br> </br>
-             <div class= "form-group"> <button id="khaosatbtn" type="submit">Khảo sát</button></div>
+             <div class= "form-group"> <button id="khaosatbtn" type="submit">Tính toán</button></div>
             </form>
   
           </div>
