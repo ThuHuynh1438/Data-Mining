@@ -136,7 +136,7 @@
           }
     
           .main-content {
-            margin-left: 320px;
+            margin-left: 400px;
             padding: 20px;
           }
     
@@ -435,7 +435,10 @@
         <input type="file" name="file" accept=".xlsx, .xls" required>
         <button type="submit">Tải lên</button>
     </form>
-
+    <h2>Chỉ số Gini của các thuộc tính</h2>
+    {% for attribute, gini in gini_values.items %}
+        <li>{{ attribute }}: {{ gini|floatformat:4 }}</li>
+        {% endfor %}
     {% if image_url %}
         <h2>Cây quyết định</h2>
         <img src="{{ image_url }}" alt="Decision Tree">
@@ -445,10 +448,10 @@
         <h2>Luật IF-THEN từ Cây Quyết Định</h2>
         <pre>{{ rules }}</pre>
     {% endif %}
+    
     </div>
 </div>
     <!-- Bootstrap JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
->>>>>>> 89059dc111986503808ab8fefd569df45684727a
 </body>
 </html>

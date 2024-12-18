@@ -530,6 +530,12 @@ def gini(request):
             target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
             attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
 
+            # Tính chỉ số Gini cho từng thuộc tính
+            gini_values = {
+                attr: calculate_gini_for_attribute(data, attr, target)
+                for attr in attributes
+            }
+
             # Tạo cây quyết định và vẽ cây
             tree = build_tree_gini(data, target, attributes)
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -544,12 +550,17 @@ def gini(request):
             # Trích xuất các quy tắc
             rules = extract_rules_gini(tree)
 
-            return render(request, 'gini.html', {'image_url': image_path, 'rules': "\n".join(rules)})
+            return render(request, 'gini.html', {
+                'image_url': image_path,
+                'rules': "\n".join(rules),
+                'gini_values': gini_values
+            })
 
         except Exception as e:
             return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
 
     return render(request, 'gini.html')
+
 # Tính entropy
 def entropy(data):
     total = len(data)
@@ -637,6 +648,12 @@ def gain(request):
             target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
             attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
 
+            # Tính chỉ số Gain cho từng thuộc tính
+            gain_values = {
+                attr: information_gain(data, attr, target)
+                for attr in attributes
+            }
+
             # Tạo cây quyết định và vẽ cây
             tree = build_tree_gain(data, target, attributes)
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -651,12 +668,17 @@ def gain(request):
             # Trích xuất các quy tắc
             rules = extract_rules_gain(tree)
 
-            return render(request, 'gain.html', {'image_url': image_path, 'rules': "\n".join(rules)})
+            return render(request, 'gain.html', {
+                'image_url': image_path,
+                'rules': "\n".join(rules),
+                'gain_values': gain_values
+            })
 
         except Exception as e:
             return render(request, 'gain.html', {'error': f'Error processing file: {str(e)}'})
 
     return render(request, 'gain.html')
+
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b) ** 2))
 
