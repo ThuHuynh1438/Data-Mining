@@ -26,8 +26,10 @@ from django.views.decorators.csrf import csrf_exempt
 import io
 from io import BytesIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-
-pd.set_option('display.max_rows', 100) 
+import matplotlib
+matplotlib.use("TkAgg")  # Backend an toàn trên macOS
+import matplotlib.pyplot as plt
+from matplotlib import use as mpl_use
 # Create your views here.
 def get_home(request):
     return render(request, 'home.html')
@@ -59,6 +61,8 @@ def HSTuongQuan(request):
                 mean_y = np.mean(y)
                 variance_x = np.mean(x ** 2) - mean_x ** 2
                 variance_y = np.mean(y ** 2) - mean_y ** 2
+                phsai_x = np.sqrt(variance_x)
+                phsai_y = np.sqrt(variance_y)
                 mean_xy = np.mean(x * y)
 
                 b1 = (mean_xy - mean_x * mean_y) / variance_x
@@ -77,6 +81,24 @@ def HSTuongQuan(request):
                 else:
                     interpretation = "Mối tương quan rất cao"
 
+                # Vẽ biểu đồ scatter plot với đường hồi quy
+                plt.figure(figsize=(8, 6))
+                plt.scatter(x, y, color='blue', label='Dữ liệu')
+                plt.plot(x, b0 + b1 * x, color='red', label=f'Hồi quy tuyến tính: y = {b0:.2f} + {b1:.2f}x')
+                plt.xlabel(column_x)
+                plt.ylabel(column_y)
+                plt.title('Biểu đồ minh họa hệ số tương quan')
+                plt.legend()
+                plt.grid(True)
+
+                # Lưu biểu đồ vào file
+                fs = FileSystemStorage()
+                image_path = os.path.join(settings.MEDIA_ROOT, 'correlation_plot.png')
+                plt.savefig(image_path, bbox_inches='tight')
+                plt.close()
+
+                image_url = fs.url('correlation_plot.png')
+
                 # Trả về kết quả dưới dạng JSON
                 return JsonResponse({
                     'column_x': column_x,
@@ -84,9 +106,15 @@ def HSTuongQuan(request):
                     'b1': b1,
                     'b0': b0,
                     'r': r,
-                    'equation': f"y = {b1:.3f}x + {b0:.3f}",
+                    'mean_x': mean_x,
+                    'mean_y': mean_y,
+                    'mean_xy': mean_xy,
+                    'variance_x': variance_x,
+                    'phsai_x': phsai_x,
+                    'phsai_y': phsai_y,
                     'correlation': f"Hệ số tương quan (r): {r:.3f}",
-                    'interpretation': interpretation
+                    'interpretation': interpretation,
+                    'image_url': image_url
                 })
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=400)
@@ -600,49 +628,57 @@ def extract_rules_gini(tree, current_rule="", rules=None):
     return rules
 
 # Hàm xử lý request và xây dựng cây quyết định bằng Gini
-def gini(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        uploaded_file = request.FILES['file']
-        fs = FileSystemStorage()
-        file_path = fs.save(uploaded_file.name, uploaded_file)
-        full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+# Sử dụng backend Agg để tránh lỗi GUI ngoài main thread
+mpl_use('Agg')
+def main():
+    # Hàm xử lý request và xây dựng cây quyết định bằng Gini
+    def gini(request):
+        if request.method == 'POST' and request.FILES.get('file'):
+            uploaded_file = request.FILES['file']
+            fs = FileSystemStorage()
+            file_path = fs.save(uploaded_file.name, uploaded_file)
+            full_path = os.path.join(settings.MEDIA_ROOT, file_path)
 
-        try:
-            # Đọc file Excel và xây dựng cây
-            data = pd.read_excel(full_path)
-            target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
-            attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
+            try:
+                # Đọc file Excel và xây dựng cây
+                data = pd.read_excel(full_path)
+                target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
+                attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
 
-            # Tính chỉ số Gini cho từng thuộc tính
-            gini_values = {
-                attr: calculate_gini_for_attribute(data, attr, target)
-                for attr in attributes
-            }
+                # Tính chỉ số Gini cho từng thuộc tính
+                gini_values = {
+                    attr: calculate_gini_for_attribute(data, attr, target)
+                    for attr in attributes
+                }
 
-            # Tạo cây quyết định và vẽ cây
-            tree = build_tree_gini(data, target, attributes)
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.axis('off')
-            draw_tree_gini(tree, ax)
+                # Tạo cây quyết định và vẽ cây
+                tree = build_tree_gini(data, target, attributes)
+                fig, ax = plt.subplots(figsize=(8, 6))
+                ax.axis('off')
+                draw_tree_gini(tree, ax)
 
-            # Lưu hình ảnh cây quyết định
-            image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gini.png')
-            plt.savefig(image_path, bbox_inches='tight')
-            image_path = fs.url('decision_tree_gini.png')
+                # Lưu hình ảnh cây quyết định
+                image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gini.png')
+                plt.savefig(image_path, bbox_inches='tight')
+                image_path = fs.url('decision_tree_gini.png')
 
-            # Trích xuất các quy tắc
-            rules = extract_rules_gini(tree)
+                # Trích xuất các quy tắc
+                rules = extract_rules_gini(tree)
 
-            return render(request, 'gini.html', {
-                'image_url': image_path,
-                'rules': "\n".join(rules),
-                'gini_values': gini_values
-            })
+                return render(request, 'gini.html', {
+                    'image_url': image_path,
+                    'rules': "\n".join(rules),
+                    'gini_values': gini_values
+                })
 
-        except Exception as e:
-            return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
+            except Exception as e:
+                return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
 
-    return render(request, 'gini.html')
+        return render(request, 'gini.html')
+
+    return gini
+
+gini = main()
 
 # Tính entropy
 def entropy(data):
