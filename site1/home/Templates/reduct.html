@@ -10,6 +10,29 @@
       rel="stylesheet"
     />
     <style>
+      .sub-menu {
+        display: none; /* Ẩn submenu ban đầu */
+        margin-left: 20px; /* Thụt lề so với menu chính */
+        }
+  
+      .sub-menu li a {
+        background-color: transparent; /* Xóa màu nền mặc định */
+        color: #fff; /* Màu chữ */
+        display: block; /* Hiển thị dạng block */
+        padding: 5px 15px;
+        padding-left: 20px; /* Thụt thêm lề cho mục con */
+        text-decoration: none;
+        }
+  
+        .sub-menu li a:hover {
+          background-color: #007bff; /* Màu xanh dương khi hover */
+          color: #fff; /* Màu chữ vẫn trắng khi hover */
+          border-radius: 5px; /* Thêm góc bo tròn */
+        }
+  
+        .sidebar ul li.active > .sub-menu {
+          display: block;
+        }
       body {
         margin: 0;
         font-family: Arial, sans-serif;
@@ -284,7 +307,7 @@
               </a>
             </li>
             <li>
-              <a href="laplace">
+              <a href="{% url 'laplace' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Laplace
               </a>
@@ -332,7 +355,7 @@
               </a>
             </li>
             <li>
-              <a href="{% url 'reduct' %}">
+              <a href="{% url 'reduct' %}" id="popular-link">
                 <i class="fas fa-arrow-circle-right"></i>
                 Tính các tập thô
               </a>
@@ -354,7 +377,7 @@
               </a>
             </li>
             <li>
-              <a href="kohonen">
+              <a href="{% url 'kohonen' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Mạng Kohonen
               </a>

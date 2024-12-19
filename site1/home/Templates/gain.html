@@ -9,6 +9,14 @@
       rel="stylesheet"
     />
     <style>
+      .sub-menu {
+        display: none; /* Ẩn submenu ban đầu */
+        margin-left: 20px; /* Thụt lề so với menu chính */
+        }
+  
+        .sidebar ul li.active > .sub-menu {
+          display: block;
+        }
         .container { 
             margin-top: 20px; 
         }
@@ -196,9 +204,6 @@
               margin: 10px 0;
             }
     
-            .sub-menu li a {
-              background-color: #3b82f6;
-            }
     
             .uploadexcel {
               text-align: center;
@@ -309,7 +314,7 @@
         <ul>
           <!-- Trang chủ -->
           <li>
-            <a href="#" id="home-link" onclick="showHome()">
+            <a  href="{% url 'homepage' %}">
               <i class="fas fa-home"></i>
               <span>Trang chủ</span>
             </a>
@@ -341,13 +346,13 @@
             </a>
             <ul class="sub-menu" id="classification">
               <li>
-                <a href="bayes" id="popular-link">
+                <a href="{% url 'bayes' %}">
                   <i class="fas fa-arrow-circle-right"></i>
                   Bayes
                 </a>
               </li>
               <li>
-                <a href="laplace">
+                <a href="{% url 'laplace' %}">
                   <i class="fas fa-arrow-circle-right"></i>
                   Laplace
                 </a>
@@ -359,7 +364,7 @@
                 </a>
                 <ul class="sub-menu" id="decisionTree">
                   <li>
-                    <a href="{% url 'gain' %}">
+                    <a href="{% url 'gain' %}" id="popular-link">
                       <i class="fas fa-sitemap"></i>
                       Gain
                     </a>
@@ -417,7 +422,7 @@
                 </a>
               </li>
               <li>
-                <a href="kohonen">
+                <a href="{% url 'kohonen' %}">
                   <i class="fas fa-arrow-circle-right"></i>
                   Mạng Kohonen
                 </a>
@@ -458,6 +463,20 @@
             <pre>{{ rules }}</pre>
         </div>
     {% endif %}
+   
 </div>
+<script>
+  function toggleSubMenu(submenu) {
+    const menu = document.getElementById(submenu);
+    if (menu) {
+      if (menu.style.display === "block") {
+        menu.style.display = "none";
+      } else {
+        menu.style.display = "block";
+      }
+    }
+  }
+
+</script>
 </body>
 </html>

@@ -10,13 +10,64 @@
       rel="stylesheet"
     />
     <style>
-      body {
+      .container { 
+        margin-top: 20px; 
+    }
+    .table-container { 
+        margin-top: 20px; 
+        overflow-x: auto; 
+    }
+    img { 
+        max-width: 100%; 
+        height: auto; 
+    }
+    pre { 
+        background-color: #f8f9fa; 
+        padding: 15px; 
+        border-radius: 5px; 
+        overflow-x: auto; 
+    }
+    body {
         margin: 0;
         font-family: Arial, sans-serif;
         background-color: #f4f4f9;
       }
 
-      .sidebar {
+    label {
+        font-weight: bold;
+    }
+    select, input, button {
+        margin: 10px 0;
+        padding: 10px;
+        font-size: 16px;
+        width: 100%;
+        max-width: 400px;
+    }
+    button {
+        cursor: pointer;
+        background-color: #1e293b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+    button:hover {
+        background-color: #1e293b;
+    }
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+    .result {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f1f1f1;
+        border-radius: 5px;
+    }
+    .hidden {
+        display: none;
+    }
+
+    .sidebar {
         width: 300px;
         background-color: #1e293b;
         color: white;
@@ -86,7 +137,7 @@
       }
 
       .main-content {
-        margin-left: 320px;
+        margin-left: 400px;
         padding: 20px;
       }
 
@@ -127,7 +178,7 @@
       }
 
         .sidebar ul li a#popular-link {
-          color: #ffd700;
+          color: #ffd700; 
           font-weight: bold; /* Làm đậm chữ */
         }
 
@@ -157,7 +208,29 @@
           background-color:#1e293b;
 
       }
-
+      .sub-menu {
+        display: none; /* Ẩn submenu ban đầu */
+        margin-left: 20px; /* Thụt lề so với menu chính */
+        }
+  
+      .sub-menu li a {
+        background-color: transparent; /* Xóa màu nền mặc định */
+        color: #fff; /* Màu chữ */
+        display: block; /* Hiển thị dạng block */
+        padding: 5px 15px;
+        padding-left: 20px; /* Thụt thêm lề cho mục con */
+        text-decoration: none;
+        }
+  
+        .sub-menu li a:hover {
+          background-color: #007bff; /* Màu xanh dương khi hover */
+          color: #fff; /* Màu chữ vẫn trắng khi hover */
+          border-radius: 5px; /* Thêm góc bo tròn */
+        }
+  
+        .sidebar ul li.active > .sub-menu {
+          display: block;
+        }
       #file-upload {
           display: none;
       }
@@ -176,11 +249,13 @@
       }
     
       .form-container {
-        width: 50%; 
+        flex: 1; /* Chiếm một phần không gian */
+        margin-right: 20px; /* Tạo khoảng cách với kết quả */
+        background-color: #f8fafc;
+        border-radius: 5px;
         padding: 20px;
-        border-right: 2px solid #ccc;
-        box-sizing: border-box;
-      }
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
     
       .form-container h2 {
         font-size: 24px;
@@ -218,14 +293,16 @@
       }
     
       .form-group button:hover {
-        background-color: #3b82f6;
+        background-color: #1e293b;
       }
     
       .result-container {
-        width: 50%; 
+        flex: 1; /* Chiếm một phần không gian */
+        background-color: #f8fafc;
+        border-radius: 5px;
         padding: 20px;
-        box-sizing: border-box;
-      }
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
     
       .result-container h2 {
         font-size: 24px;
@@ -256,7 +333,7 @@
       <ul>
         <!-- Trang chủ -->
         <li>
-          <a href="#" id="home-link" onclick="showHome()">
+          <a  href="{% url 'homepage' %}">
             <i class="fas fa-home"></i>
             <span>Trang chủ</span>
           </a>
@@ -288,13 +365,13 @@
           </a>
           <ul class="sub-menu" id="classification">
             <li>
-              <a href="bayes">
+              <a href="{% url 'bayes' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Bayes
               </a>
             </li>
             <li>
-              <a href="laplace">
+              <a href="{% url 'laplace' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Laplace
               </a>
@@ -364,7 +441,7 @@
               </a>
             </li>
             <li>
-              <a href="kohonen">
+              <a href="{% url 'kohonen' %}">
                 <i class="fas fa-arrow-circle-right"></i>
                 Mạng Kohonen
               </a>
@@ -489,6 +566,16 @@
                       `<div style="color: red;">Có lỗi xảy ra trong quá trình xử lý!</div>`;
                   }
                 });
+                function toggleSubMenu(menuId) {
+                  const menu = document.getElementById(menuId);
+                  if (menu) {
+                    if (menu.style.display === "block") {
+                      menu.style.display = "none";
+                    } else {
+                      menu.style.display = "block";
+                    }
+                  }
+                }
               </script>                
         </body>
         </html>       

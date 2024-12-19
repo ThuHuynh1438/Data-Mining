@@ -1,22 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tap Pho Bien</title>
-    <!-- Font Awesome -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMeans Clustering</title>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
       rel="stylesheet"
     />
     <style>
-      body {
+      .container { 
+        margin-top: 20px; 
+    }
+    .table-container { 
+        margin-top: 20px; 
+        overflow-x: auto; 
+    }
+    img { 
+        max-width: 100%; 
+        height: auto; 
+    }
+    pre { 
+        background-color: #f8f9fa; 
+        padding: 15px; 
+        border-radius: 5px; 
+        overflow-x: auto; 
+    }
+    body {
         margin: 0;
         font-family: Arial, sans-serif;
         background-color: #f4f4f9;
       }
 
-      .sidebar {
+    label {
+        font-weight: bold;
+    }
+    select, input, button {
+        margin: 10px 0;
+        padding: 10px;
+        font-size: 16px;
+        width: 100%;
+        max-width: 400px;
+    }
+    button {
+        cursor: pointer;
+        background-color: #1e293b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+    button:hover {
+        background-color: #1e293b;
+    }
+    .error {
+        color: red;
+        font-weight: bold;
+    }
+    .result {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f1f1f1;
+        border-radius: 5px;
+    }
+    .hidden {
+        display: none;
+    }
+
+    .sidebar {
         width: 300px;
         background-color: #1e293b;
         color: white;
@@ -86,7 +136,7 @@
       }
 
       .main-content {
-        margin-left: 320px;
+        margin-left: 400px;
         padding: 20px;
       }
 
@@ -127,7 +177,7 @@
       }
 
         .sidebar ul li a#popular-link {
-          color: #ffd700; /* Màu vàng cho Tập Phổ Biến */
+          color: #ffd700; 
           font-weight: bold; /* Làm đậm chữ */
         }
 
@@ -157,7 +207,29 @@
           background-color:#1e293b;
 
       }
-
+      .sub-menu {
+        display: none; /* Ẩn submenu ban đầu */
+        margin-left: 20px; /* Thụt lề so với menu chính */
+        }
+  
+      .sub-menu li a {
+        background-color: transparent; /* Xóa màu nền mặc định */
+        color: #fff; /* Màu chữ */
+        display: block; /* Hiển thị dạng block */
+        padding: 5px 15px;
+        padding-left: 20px; /* Thụt thêm lề cho mục con */
+        text-decoration: none;
+        }
+  
+        .sub-menu li a:hover {
+          background-color: #007bff; /* Màu xanh dương khi hover */
+          color: #fff; /* Màu chữ vẫn trắng khi hover */
+          border-radius: 5px; /* Thêm góc bo tròn */
+        }
+  
+        .sidebar ul li.active > .sub-menu {
+          display: block;
+        }
       #file-upload {
           display: none;
       }
@@ -176,11 +248,13 @@
       }
     
       .form-container {
-        width: 50%; 
+        flex: 1; /* Chiếm một phần không gian */
+        margin-right: 20px; /* Tạo khoảng cách với kết quả */
+        background-color: #f8fafc;
+        border-radius: 5px;
         padding: 20px;
-        border-right: 2px solid #ccc;
-        box-sizing: border-box;
-      }
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
     
       .form-container h2 {
         font-size: 24px;
@@ -218,14 +292,16 @@
       }
     
       .form-group button:hover {
-        background-color: #3b82f6;
+        background-color: #1e293b;
       }
     
       .result-container {
-        width: 50%; 
+        flex: 1; /* Chiếm một phần không gian */
+        background-color: #f8fafc;
+        border-radius: 5px;
         padding: 20px;
-        box-sizing: border-box;
-      }
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
     
       .result-container h2 {
         font-size: 24px;
@@ -248,131 +324,131 @@
         margin-bottom: 30px; /* Tạo khoảng cách giữa các dòng */
     }
     </style>
-  </head>
-
-  <body>
+</head>
+<body>
     <div class="sidebar">
-      <h2><i class="fas fa-database"></i> Home</h2>
-      <ul>
-        <!-- Trang chủ -->
-        <li>
-          <a href="#" id="home-link" onclick="showHome()">
-            <i class="fas fa-home"></i>
-            <span>Trang chủ</span>
+        <h2><i class="fas fa-database"></i> Home</h2>
+        <ul>
+          <!-- Trang chủ -->
+          <li>
+            <a  href="{% url 'homepage' %}">
+              <i class="fas fa-home"></i>
+              <span>Trang chủ</span>
+            </a>
+          </li>
+      
+          <!-- Tiền xử lý dữ liệu -->
+          <li>
+            <a href="{% url 'HSTuongQuan' %}">
+            <i class="fas fa-chart-line"></i>
+            Tiền xử lý dữ liệu
           </a>
         </li>
-    
-        <!-- Tiền xử lý dữ liệu -->
-        <li>
-          <a href="{% url 'HSTuongQuan' %}">
-          <i class="fas fa-chart-line"></i>
-          Tiền xử lý dữ liệu
-        </a>
-      </li>
-    
-        <!-- Tập phổ biến -->
-        <li>
-          <a href="{% url 'TapPhoBien' %}" id="popular-link">
-            <i class="fas fa-layer-group"></i>
-            Tập phổ biến và Luật kết hợp
-          </a>
-        </li>
-    
-        <!-- Phân lớp -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('classification')">
-            <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
-              <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
-            </svg>
-            <span>Phân lớp</span>
-          </a>
-          <ul class="sub-menu" id="classification">
-            <li>
-              <a href="bayes">
-                <i class="fas fa-arrow-circle-right"></i>
-                Bayes
-              </a>
-            </li>
-            <li>
-              <a href="laplace">
-                <i class="fas fa-arrow-circle-right"></i>
-                Laplace
-              </a>
-            </li>
-            <li>
-              <a href="#" onclick="toggleSubMenu('decisionTree')">
-                <i class="fas fa-arrow-circle-right"></i>
-                Cây quyết định
-              </a>
-              <ul class="sub-menu" id="decisionTree">
-                <li>
-                  <a href="{% url 'gain' %}">
-                    <i class="fas fa-sitemap"></i>
-                    Gain
-                  </a>
-                </li>
-                <li>
-                  <a href="{% url 'gini' %}">
-                    <i class="fas fa-tree"></i>
-                    Gini
-                  </a>
-                </li>
-              </ul>
-            </li>
-          </ul>
-        </li>
-    
-        <!-- Tập thô -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('reducts')">
-            <i class="fas fa-stream"></i>
-            Tập thô
-          </a>
-          <ul class="sub-menu" id="reducts">
-            <li>
-              <a href="{% url 'dependency' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Khảo sát sự phụ thuộc
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'approximation' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính xấp xỉ
-              </a>
-            </li>
-            <li>
-              <a href="{% url 'reduct' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                Tính các tập thô
-              </a>
-            </li>
-          </ul>
-        </li>
-    
-        <!-- Gom cụm -->
-        <li>
-          <a href="#" onclick="toggleSubMenu('clustering')">
-            <i class="fas fa-object-group"></i>
-            Gom cụm
-          </a>
-          <ul class="sub-menu" id="clustering">
-            <li>
-              <a href="{% url 'kmeans' %}">
-                <i class="fas fa-arrow-circle-right"></i>
-                K-Means
-              </a>
-            </li>
-            <li>
-              <a href="kohonen">
-                <i class="fas fa-arrow-circle-right"></i>
-                Mạng Kohonen
-              </a>
-            </li>
-          </ul>
-        </li>
-      </ul>
-    </div>
+      
+          <!-- Tập phổ biến -->
+          <li>
+            <a href="{% url 'TapPhoBien' %}"id="popular-link">
+              <i class="fas fa-layer-group"></i>
+              Tập phổ biến và Luật kết hợp
+            </a>
+          </li>
+      
+          <!-- Phân lớp -->
+          <li>
+            <a href="#" onclick="toggleSubMenu('classification')">
+              <svg xmlns="http://www.w3.org/2000/svg" height="20px" width="20px" viewBox="0 -960 960 960" fill="#ffffff">
+                <path d="M600-120v-120H440v-400h-80v120H80v-320h280v120h240v-120h280v320H600v-120h-80v320h80v-120h280v320H600ZM160-760v160-160Zm520 400v160-160Zm0-400v160-160Zm0 160h120v-160H680v160Zm0 400h120v-160H680v160ZM160-600h120v-160H160v160Z" />
+              </svg>
+              <span>Phân lớp</span>
+            </a>
+            <ul class="sub-menu" id="classification">
+              <li>
+                <a href="{% url 'bayes' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Bayes
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'laplace' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Laplace
+                </a>
+              </li>
+              <li>
+                <a href="#" onclick="toggleSubMenu('decisionTree')">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Cây quyết định
+                </a>
+                <ul class="sub-menu" id="decisionTree">
+                  <li>
+                    <a href="{% url 'gain' %}">
+                      <i class="fas fa-sitemap"></i>
+                      Gain
+                    </a>
+                  </li>
+                  <li>
+                    <a href="{% url 'gini' %}">
+                      <i class="fas fa-tree"></i>
+                      Gini
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+      
+          <!-- Tập thô -->
+          <li>
+            <a href="#" onclick="toggleSubMenu('reducts')">
+              <i class="fas fa-stream"></i>
+              Tập thô
+            </a>
+            <ul class="sub-menu" id="reducts">
+              <li>
+                <a href="{% url 'dependency' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Khảo sát sự phụ thuộc
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'approximation' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Tính xấp xỉ
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'reduct' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Tính các tập thô
+                </a>
+              </li>
+            </ul>
+          </li>
+      
+          <!-- Gom cụm -->
+          <li>
+            <a href="#" onclick="toggleSubMenu('clustering')">
+              <i class="fas fa-object-group"></i>
+              Gom cụm
+            </a>
+            <ul class="sub-menu" id="clustering">
+              <li>
+                <a href="{% url 'kmeans' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  K-Means
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'kohonen' %}">
+                  <i class="fas fa-arrow-circle-right"></i>
+                  Mạng Kohonen
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
 
     <div class="main-content">
       <div class="content-header">
@@ -481,6 +557,17 @@
               "<div style='color: red;'>Có lỗi xảy ra trong quá trình xử lý!</div>";
           });
       }
+        function toggleSubMenu(menuId) {
+          const menu = document.getElementById(menuId);
+          if (menu) {
+            if (menu.style.display === "block") {
+              menu.style.display = "none";
+            } else {
+              menu.style.display = "block";
+            }
+          }
+        }
+      
     </script>
   </body>
 </html>
