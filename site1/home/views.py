@@ -29,6 +29,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import matplotlib
 matplotlib.use("TkAgg")  # Backend an toàn trên macOS
 import matplotlib.pyplot as plt
+from matplotlib import use as mpl_use
 # Create your views here.
 def get_home(request):
     return render(request, 'home.html')
@@ -608,49 +609,57 @@ def extract_rules_gini(tree, current_rule="", rules=None):
     return rules
 
 # Hàm xử lý request và xây dựng cây quyết định bằng Gini
-def gini(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        uploaded_file = request.FILES['file']
-        fs = FileSystemStorage()
-        file_path = fs.save(uploaded_file.name, uploaded_file)
-        full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+# Sử dụng backend Agg để tránh lỗi GUI ngoài main thread
+mpl_use('Agg')
+def main():
+    # Hàm xử lý request và xây dựng cây quyết định bằng Gini
+    def gini(request):
+        if request.method == 'POST' and request.FILES.get('file'):
+            uploaded_file = request.FILES['file']
+            fs = FileSystemStorage()
+            file_path = fs.save(uploaded_file.name, uploaded_file)
+            full_path = os.path.join(settings.MEDIA_ROOT, file_path)
 
-        try:
-            # Đọc file Excel và xây dựng cây
-            data = pd.read_excel(full_path)
-            target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
-            attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
+            try:
+                # Đọc file Excel và xây dựng cây
+                data = pd.read_excel(full_path)
+                target = data.columns[-1]  # Cột mục tiêu là cột cuối cùng
+                attributes = list(data.columns[:-1])  # Các thuộc tính là các cột trước cột mục tiêu
 
-            # Tính chỉ số Gini cho từng thuộc tính
-            gini_values = {
-                attr: calculate_gini_for_attribute(data, attr, target)
-                for attr in attributes
-            }
+                # Tính chỉ số Gini cho từng thuộc tính
+                gini_values = {
+                    attr: calculate_gini_for_attribute(data, attr, target)
+                    for attr in attributes
+                }
 
-            # Tạo cây quyết định và vẽ cây
-            tree = build_tree_gini(data, target, attributes)
-            fig, ax = plt.subplots(figsize=(8, 6))
-            ax.axis('off')
-            draw_tree_gini(tree, ax)
+                # Tạo cây quyết định và vẽ cây
+                tree = build_tree_gini(data, target, attributes)
+                fig, ax = plt.subplots(figsize=(8, 6))
+                ax.axis('off')
+                draw_tree_gini(tree, ax)
 
-            # Lưu hình ảnh cây quyết định
-            image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gini.png')
-            plt.savefig(image_path, bbox_inches='tight')
-            image_path = fs.url('decision_tree_gini.png')
+                # Lưu hình ảnh cây quyết định
+                image_path = os.path.join(settings.MEDIA_ROOT, 'decision_tree_gini.png')
+                plt.savefig(image_path, bbox_inches='tight')
+                image_path = fs.url('decision_tree_gini.png')
 
-            # Trích xuất các quy tắc
-            rules = extract_rules_gini(tree)
+                # Trích xuất các quy tắc
+                rules = extract_rules_gini(tree)
 
-            return render(request, 'gini.html', {
-                'image_url': image_path,
-                'rules': "\n".join(rules),
-                'gini_values': gini_values
-            })
+                return render(request, 'gini.html', {
+                    'image_url': image_path,
+                    'rules': "\n".join(rules),
+                    'gini_values': gini_values
+                })
 
-        except Exception as e:
-            return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
+            except Exception as e:
+                return render(request, 'gini.html', {'error': f'Error processing file: {str(e)}'})
 
-    return render(request, 'gini.html')
+        return render(request, 'gini.html')
+
+    return gini
+
+gini = main()
 
 # Tính entropy
 def entropy(data):
