@@ -26,6 +26,8 @@ from django.views.decorators.csrf import csrf_exempt
 import io
 from io import BytesIO
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
+pd.set_option('display.max_rows', 100) 
 # Create your views here.
 def get_home(request):
     return render(request, 'home.html')
@@ -345,7 +347,7 @@ def dependency(request):
                 raise ValueError("Định dạng file không được hỗ trợ. Chỉ hỗ trợ .csv, .xls, và .xlsx.")
 
             # Hiển thị xem trước dữ liệu
-            data_preview = data.head().to_html(classes='table table-striped')
+            data_preview = data.head(10).to_html(classes='table table-striped')
             request.session['data_preview'] = data_preview  # Lưu vào session
             context['data_preview'] = data_preview
 
