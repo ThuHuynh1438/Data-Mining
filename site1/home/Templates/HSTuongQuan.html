@@ -412,6 +412,10 @@
                 <li id="equation"></li>
                 <li id="interpretation"></li>
               </ul>
+              <div id="chart-container">
+                <h3>Biểu đồ minh họa:</h3>
+                <img id="correlation-plot" alt="Biểu đồ tương quan" style="max-width: 100%; height: auto;" />
+            </div>
             </div>
           </div>
             
@@ -475,6 +479,8 @@
 
                         document.getElementById("interpretation").innerHTML = `<strong>Diễn giải:</strong> ${result.interpretation}`;
                         document.getElementById("interpretation").classList.add("result-item");
+
+                        document.getElementById("correlation-plot").src = result.image_url;
 
                       }
                   } catch (error) {

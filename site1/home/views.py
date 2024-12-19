@@ -81,6 +81,24 @@ def HSTuongQuan(request):
                 else:
                     interpretation = "Mối tương quan rất cao"
 
+                # Vẽ biểu đồ scatter plot với đường hồi quy
+                plt.figure(figsize=(8, 6))
+                plt.scatter(x, y, color='blue', label='Dữ liệu')
+                plt.plot(x, b0 + b1 * x, color='red', label=f'Hồi quy tuyến tính: y = {b0:.2f} + {b1:.2f}x')
+                plt.xlabel(column_x)
+                plt.ylabel(column_y)
+                plt.title('Biểu đồ minh họa hệ số tương quan')
+                plt.legend()
+                plt.grid(True)
+
+                # Lưu biểu đồ vào file
+                fs = FileSystemStorage()
+                image_path = os.path.join(settings.MEDIA_ROOT, 'correlation_plot.png')
+                plt.savefig(image_path, bbox_inches='tight')
+                plt.close()
+
+                image_url = fs.url('correlation_plot.png')
+
                 # Trả về kết quả dưới dạng JSON
                 return JsonResponse({
                     'column_x': column_x,
@@ -95,7 +113,8 @@ def HSTuongQuan(request):
                     'phsai_x': phsai_x,
                     'phsai_y': phsai_y,
                     'correlation': f"Hệ số tương quan (r): {r:.3f}",
-                    'interpretation': interpretation
+                    'interpretation': interpretation,
+                    'image_url': image_url
                 })
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=400)
