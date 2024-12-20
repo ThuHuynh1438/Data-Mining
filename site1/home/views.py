@@ -375,7 +375,7 @@ def dependency(request):
                 raise ValueError("Định dạng file không được hỗ trợ. Chỉ hỗ trợ .csv, .xls, và .xlsx.")
 
             # Hiển thị xem trước dữ liệu
-            data_preview = data.head().to_html(classes='table table-striped')
+            data_preview = data.head(10).to_html(classes='table table-striped')
             request.session['data_preview'] = data_preview  # Lưu vào session
             context['data_preview'] = data_preview
 
